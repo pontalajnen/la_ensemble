@@ -142,5 +142,7 @@ alias <name of choice>="mamba activate pytorch-2.5.1-python-3.10"
 ## Running With Multiple GPUs
 
 ```bash
+interactive --gpus=x
+
 torchrun --nproc_per_node=2 train.py --distributed [other args]
 ```

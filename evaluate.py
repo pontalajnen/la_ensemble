@@ -319,14 +319,14 @@ def main():
     parser.add_argument("--use_cpu", action=BooleanOptionalAction, default=False,
                         help="Whether to use CPU for evaluation.")
 
+    # --------------------------------------------
+
     parser.add_argument("--dataset", type=str, default="",  # Add check to only eval on correct dataset
                         help="The dataset to evaluate on (e.g. CIFAR10, ImageNet etc.).")
     parser.add_argument("--basic_augment", action=BooleanOptionalAction, default=True,
                         help="True if you want to use basic augmentations (horizontal flip, random crop with padding).")
     parser.add_argument("--val_split", type=int, default=0.0,
                         help="Split the training set into train and validation set.")
-    parser.add_argument("--num_workers", type=int, default=1,
-                        help="Number of workers for the dataloader.")
     parser.add_argument("--eval_ood", action=BooleanOptionalAction, default=True,
                         help="Whether to evaluate on OOD data.")
     parser.add_argument("--eval_shift", action=BooleanOptionalAction, default=True,
