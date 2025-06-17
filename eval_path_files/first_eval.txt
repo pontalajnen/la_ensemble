@@ -1,1 +1,1 @@
-../experiment_results/CIFAR10_ResNet18__SAM/seed=0-epoch=183-val_loss=0.1318-model=ResNet18-optimizer=SGD-rho=0.05-adaptive=False-model_name=ResNet18_CIFAR10_seed0_SGD.pth
+../seed=1-epoch=183-val_loss=0.1558-model=ResNet18-optimizer=SGD-rho=0.05-adaptive=False-model_name=ResNet18_CIFAR10_seed1_SGD.pth
