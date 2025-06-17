@@ -20,6 +20,7 @@
         "MNLI",
         "MRPC",
         "multiclass",
+        "nccl",
         "normorig",
         "noshort",
         "noshortcut",
