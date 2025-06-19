@@ -194,7 +194,10 @@ def eval(args):
                 rel_plot = "ID"
             else:
                 rel_plot = None
-            ece_calc, mce_calc, aece_calc, acc, nll_value, brier_score, f1, OOD_y_preds_logits, OOD_labels, y_pred_id, y_target_id = eval_data(model, test_loader, device=device, num_classes=num_classes, laplace=args.laplace, link=args.approx_link, nll=True, mc_samples=args.mc_samples, pred_type=pred_type, cifar10H=args.cifar10H, model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot)
+            ece_calc, mce_calc, aece_calc, acc, nll_value, brier_score, f1, OOD_y_preds_logits, OOD_labels, y_pred_id, y_target_id = eval_data(  # noqa
+                model, test_loader, device=device, num_classes=num_classes, laplace=args.laplace,
+                link=args.approx_link, nll=True, mc_samples=args.mc_samples, pred_type=pred_type,
+                cifar10H=args.cifar10H, model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot)
             results[model_name]['clean_accuracy'] = acc.to("cpu").numpy().tolist()
             results[model_name]['f1'] = f1.to("cpu").numpy().tolist()
             results[model_name]['ECE'] = ece_calc.to("cpu").numpy().tolist()*100
@@ -211,7 +214,10 @@ def eval(args):
                 rel_plot = "SHIFT"
             else:
                 rel_plot = None
-            ece_calc, mce_calc, aece_calc, acc, nll_value, brier_score, f1, _, _, y_pred_shift, y_target_shift = eval_data(model, shift_loader, device=device, num_classes=num_classes, laplace=args.laplace, link=args.approx_link, mc_samples=args.mc_samples, pred_type=pred_type, model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot)
+            ece_calc, mce_calc, aece_calc, acc, nll_value, brier_score, f1, _, _, y_pred_shift, y_target_shift = eval_data(  # noqa
+                model, shift_loader, device=device, num_classes=num_classes, laplace=args.laplace,
+                link=args.approx_link, mc_samples=args.mc_samples, pred_type=pred_type, model_name=args.save_file_name,
+                num_models=num_models, rel_plot=rel_plot)
             results[model_name]['SHIFT ECE'] = ece_calc.to("cpu").numpy().tolist()*100
             results[model_name]['SHIFT MCE'] = mce_calc.to("cpu").numpy().tolist()*100
             results[model_name]['SHIFT aECE'] = aece_calc.to("cpu").numpy().tolist()*100
