@@ -15,6 +15,8 @@ from laplace.curvature.backpack import BackPackGGN, BackPackEF
 from laplace.curvature.curvlinops import CurvlinopsEF, CurvlinopsGGN
 from helpers import common_arguments
 
+# Only for one model at a time, with possible ensemble but different paths
+
 
 def eval(args):
     print("--- Starting evaluation ---")

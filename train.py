@@ -18,6 +18,7 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
 from helpers import common_arguments
+from models.ensemble_model import EnsembleModel
 
 
 def init_transformer(args, data_module):
@@ -58,20 +59,28 @@ def init_transformer(args, data_module):
 
 def init_model(args, device, num_classes):
     if args.model == "ResNet18":
-        model = torch_resnet18(num_classes=num_classes)
+        if args.ensemble:
+            models = EnsembleModel(
+                num_models=args.num_ensemble_models,
+                num_classes=num_classes,
+                model=torch_resnet18
+            )
+        else:
+            models = torch_resnet18(num_classes=num_classes)
+
         print("----- Model loaded -----")
-        model = model.to(device)
-        print("----- Model on device -----")
+        models = models.to(device)
+
     elif args.model == "ViT":
-        model = timm.create_model('vit_base_patch16_224.orig_in21k', pretrained=True, num_classes=num_classes)
-        model = model.to(device)
+        models = timm.create_model('vit_base_patch16_224.orig_in21k', pretrained=True, num_classes=num_classes)
+        models = models.to(device)
         print("----- Model ready and on device -----")
     else:
         raise Exception("Requested model does not exist! Has to be one of 'ResNet18', 'ViT'")
     if args.distributed:
-        model = DDP(model, device_ids=[args.local_rank])
+        models = DDP(models, device_ids=[args.local_rank])
 
-    return model
+    return models
 
 
 def init_optimizer(args, model):
@@ -185,128 +194,135 @@ def train(args):
         val_loader = dm.val_dataloader()
 
     images, labels = next(iter(train_loader))
-    print(images.shape)
 
     print("Loaded the dataset!")
     wandb.login()
 
-    for i in range(args.seeds_per_job):
-        print(i, args.seed)
-        seed = args.seed + i
-        model_name = args.model+"_"+args.dataset+"_seed"+str(seed)+"_"+args.base_optimizer
-        torch_seed = torch.Generator()
-        torch_seed.manual_seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        np.random.seed(seed)
+    seed = args.seed
+    model_name = args.model + "_" + args.dataset + "_" + args.base_optimizer
+    torch_seed = torch.Generator()
+    torch_seed.manual_seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
 
-        project = f"LA_SAM_{args.dataset}_{args.model}_SAM{args.SAM}_adaptive{args.adaptive}"
-        # Initialize W&B run and log hyperparameters
-        run = wandb.init(project=project, name=model_name, config={
-            "base_optimizer": args.base_optimizer,
-            "rho": args.rho,
-            "adaptive": args.adaptive,
-            "lr": args.learning_rate,
-            "lr_scheduler": args.lr_scheduler,
-            "batch_size": args.batch_size,
-            "dropout": args.dropout,
-            "weight_decay": args.weight_decay,
-            "seed": seed,
-            "SAM": args.SAM,
-            "momentum": args.momentum,
-            "epochs": args.epochs,
-            "dataset": args.dataset,
-            "model": args.model
-        })
+    project = f"LA_SAM_{args.dataset}_{args.model}_SAM{args.SAM}_adaptive{args.adaptive}"
+    # Initialize W&B run and log hyperparameters
+    run = wandb.init(project=project, name=model_name, config={
+        "base_optimizer": args.base_optimizer,
+        "rho": args.rho,
+        "adaptive": args.adaptive,
+        "lr": args.learning_rate,
+        "lr_scheduler": args.lr_scheduler,
+        "batch_size": args.batch_size,
+        "dropout": args.dropout,
+        "weight_decay": args.weight_decay,
+        "seed": seed,
+        "SAM": args.SAM,
+        "momentum": args.momentum,
+        "epochs": args.epochs,
+        "dataset": args.dataset,
+        "model": args.model
+    })
 
-        # Prepare for saving model checkpoints locally and log them to W&B
-        save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
-        os.makedirs(save_dir, exist_ok=True)
+    # Prepare for saving model checkpoints locally and log them to W&B
+    save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
+    os.makedirs(save_dir, exist_ok=True)
 
-        artifact = wandb.Artifact("model_checkpoints", type="model")
+    artifact = wandb.Artifact("model_checkpoints", type="model")
 
-        model = init_model(args, device, num_classes)
+    model = init_model(args, device, num_classes)
 
-        # Optimizer
-        opt, scheduler = init_optimizer(args, model)
+    # Optimizer
+    opt, scheduler = init_optimizer(args, model)
 
-        # Loss function
-        criterion = nn.CrossEntropyLoss()
-        best_val_loss = float("inf")
-        best_epoch = 0
-        best_checkpoint_path = os.path.join(save_dir, f"model_{args.model}_seed{seed}_best.pth")
-        print("----- Start training loop -----")
-        for epoch in tqdm(range(args.epochs), desc="Epochs"):
+    # Loss function
+    criterion = nn.CrossEntropyLoss()
+    best_val_loss = float("inf")
+    best_epoch = 0
+    best_checkpoint_path = os.path.join(save_dir, f"model_{args.model}_seed{seed}_best.pth")
+    print("----- Start training loop -----")
+    for epoch in tqdm(range(args.epochs), desc="Epochs"):
+        train_sampler.set_epoch(epoch) if args.distributed else None
+        model.train()
 
-            train_sampler.set_epoch(epoch) if args.distributed else None
-            model.train()
-
-            for batch_idx, (x, y) in enumerate(train_loader):
-                x, y = x.to(device), y.to(device)
+        for batch_idx, (x, y) in enumerate(train_loader):
+            x, y = x.to(device), y.to(device)
+            if args.ensemble:
                 if args.SAM:
-                    # --------------- SAM ----------------
-                    # first forward-backward step
-                    enable_running_stats(model)  # <- this is the important line
-                    y_pred = model(x)
-                    loss = criterion(y_pred, y)
+                    enable_running_stats(model)
+                    loss = sum([criterion(y_pred, y) for y_pred in model(x)])
                     loss.mean().backward()
                     opt.first_step(zero_grad=True)
 
-                    # second forward-backward step
-                    disable_running_stats(model)  # <- this is the important line
+                    disable_running_stats(model)
+                    loss = sum([criterion(y_pred, y) for y_pred in model(x)])
+                    loss.mean().backward()
+                    opt.second_step(zero_grad=True)
+                else:
+                    loss = sum([criterion(y_pred, y) for y_pred in model(x)])
+                    loss.backward()
+                    opt.step()
+                    opt.zero_grad()
+            else:
+                if args.SAM:
+                    enable_running_stats(model)
+                    loss = criterion(model(x), y).mean()
+                    loss.backward()
+                    opt.first_step(zero_grad=True)
+
+                    disable_running_stats(model)
                     criterion(model(x), y).mean().backward()
                     opt.second_step(zero_grad=True)
-                    # ------------------------------------
                 else:
-                    y_pred = model(x)
-                    loss = criterion(y_pred, y)
+                    loss = criterion(model(x), y)
                     loss.backward()
                     opt.step()
                     opt.zero_grad()
 
-            # Validation loop
-            val_accuracy, val_loss = evaluate_model(model, val_loader, device, criterion)
+        # Validation loop
+        val_accuracy, val_loss = evaluate_model(model, val_loader, device, criterion)
 
-            if args.distributed:
-                # Gather validation results from all processes
-                val_accuracy = torch.tensor(val_accuracy, device=device)
-                val_loss = torch.tensor(val_loss, device=device)
-                dist.all_reduce(val_accuracy, op=dist.ReduceOp.SUM)
-                dist.all_reduce(val_loss, op=dist.ReduceOp.SUM)
-                val_accuracy /= dist.get_world_size()
-                val_loss /= dist.get_world_size()
-            # Log validation accuracy
-            wandb.log({"epoch": epoch, "val_accuracy": val_accuracy,
-                       "val_loss": val_loss, "lr": scheduler.get_last_lr()[0]})
+        if args.distributed:
+            # Gather validation results from all processes
+            val_accuracy = torch.tensor(val_accuracy, device=device)
+            val_loss = torch.tensor(val_loss, device=device)
+            dist.all_reduce(val_accuracy, op=dist.ReduceOp.SUM)
+            dist.all_reduce(val_loss, op=dist.ReduceOp.SUM)
+            val_accuracy /= dist.get_world_size()
+            val_loss /= dist.get_world_size()
+        # Log validation accuracy
+        wandb.log({"epoch": epoch, "val_accuracy": val_accuracy,
+                   "val_loss": val_loss, "lr": scheduler.get_last_lr()[0]})
 
-            # Save and track the best model
-            if val_loss < best_val_loss:
-                best_val_loss = val_loss
-                best_epoch = epoch
-                torch.save(model.state_dict(), best_checkpoint_path)  # Overwrites temp file
+        # Save and track the best model
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_epoch = epoch
+            torch.save(model.state_dict(), best_checkpoint_path)  # Overwrites temp file
 
-            scheduler.step()
+        scheduler.step()
 
-        print("Finished training loop!")
-        # Rename the best checkpoint with metadata
-        final_checkpoint_path = os.path.join(
-            save_dir,
-            (f"seed={seed}-epoch={best_epoch:02d}-val_loss={best_val_loss:.4f}-model={args.model}-"
-             f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
-        )
-        os.rename(best_checkpoint_path, final_checkpoint_path)  # Rename the best model file
+    print("Finished training loop!")
+    # Rename the best checkpoint with metadata
+    final_checkpoint_path = os.path.join(
+        save_dir,
+        (f"seed={seed}-epoch={best_epoch:02d}-val_loss={best_val_loss:.4f}-model={args.model}-"
+         f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
+    )
+    os.rename(best_checkpoint_path, final_checkpoint_path)  # Rename the best model file
 
-        last_epoch_checkpoint_path = os.path.join(
-            save_dir,
-            (f"seed={seed}-epoch={args.epochs}-val_loss={val_loss:.4f}-model={args.model}-"
-             f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
-        )
-        # Store model after last epoch
-        torch.save(model.state_dict(), last_epoch_checkpoint_path)
+    last_epoch_checkpoint_path = os.path.join(
+        save_dir,
+        (f"seed={seed}-epoch={args.epochs}-val_loss={val_loss:.4f}-model={args.model}-"
+         f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
+    )
+    # Store model after last epoch
+    torch.save(model.state_dict(), last_epoch_checkpoint_path)
 
-        artifact.add_file(final_checkpoint_path)
-        wandb.log_artifact(artifact)
-        run.finish()
+    artifact.add_file(final_checkpoint_path)
+    wandb.log_artifact(artifact)
+    run.finish()
 
 
 def main():
@@ -369,6 +385,10 @@ def main():
                         help="Use 0.0 for no label smoothing.")
     parser.add_argument("--distributed", action="store_true", help="Use distributed data parallel")
     parser.add_argument("--local_rank", "--local-rank", default=0, type=int, help="Local rank for distributed training")
+
+    # Ensemble arguments
+    parser.add_argument("--ensemble", action=BooleanOptionalAction, default=False)
+    parser.add_argument("--num_ensemble_models", type=int, default=5)
 
     parser = common_arguments(parser)
 

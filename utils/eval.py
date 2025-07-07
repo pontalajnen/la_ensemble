@@ -46,8 +46,11 @@ def load_model(name, vit, nlp, path, device, num_classes):
     else:
         raise Exception("Oops, requested model is not supported!")
     if name == "ROBERTA":
-        model.model.load_state_dict(torch.load(path, map_location=device))
+        model.model.load_state_dict(torch.load(path, map_location=device, weight_only=True))
     else:
+        print("madafaking here madafaka --------------------------------")
+        print(path)
+        print("------------------------------------------------")
         model.load_state_dict(torch.load(path, map_location=device))
     model.to(device)
     return feature_reduction, model

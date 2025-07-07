@@ -19,4 +19,9 @@ class EnsembleModel(nn.Module):
             self.models.append(m)
 
     def forward(self, x: torch.Tensor):
-        return [m(x) for m in self.models]
+        predictions = [m(x) for m in self.models]
+
+        if self.training:
+            return predictions
+        # TODO: Might want to do majority voting instead???
+        return torch.stack(predictions, dim=0).mean(dim=0)
