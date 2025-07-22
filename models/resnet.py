@@ -333,14 +333,10 @@ def WRN110_4_noshort():
 
 
 def torch_resnet18(num_classes):
-    print("Creating base model")
     model = torchvision.models.resnet18(weights=None)
-    print("Adjusting first conv layer")
     model.conv1 = nn.Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
     model.maxpool = nn.Identity()
-    print("Setting output layer")
     model.fc = nn.Linear(in_features=512, out_features=num_classes, bias=True)
-    print("Model ready")
     return model
 
 

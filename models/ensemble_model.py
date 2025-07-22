@@ -1,7 +1,7 @@
 import torch.nn as nn
 import random
 import torch
-from resnet import torch_resnet18
+from .resnet import torch_resnet18
 
 
 class EnsembleModel(nn.Module):
