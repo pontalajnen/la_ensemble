@@ -3,7 +3,6 @@
 #SBATCH --mem 8GB
 #SBATCH --cpus-per-task 4
 #SBATCH --time 48:00:00
-#SBATCH --constrain "shire"
 #SBATCH --output /Midgard/home/%u/thesis/logs/%J_slurm.out
 #SBATCH --error  /Midgard/home/%u/thesis/logs/%J_slurm.err
 

@@ -333,13 +333,10 @@ def main():
 
     # Model and Dataset
     parser.add_argument("--dataset", type=str, default="CIFAR10")
-    parser.add_argument("--basic_augment", action=BooleanOptionalAction, default=True,
-                        help="Basic augmentations (horizontal flip, random crop with padding).")
-    parser.add_argument("--val_split", type=float, default=0.0,
-                        help="Split the training set into train and validation set.")
+    parser.add_argument("--basic_augment", action=BooleanOptionalAction, default=True)
+    parser.add_argument("--val_split", type=float, default=0.0)
     parser.add_argument("--model", type=str, default="ResNet18")
-    parser.add_argument("--depth", default=18, type=int,
-                        help="Number of layers.")
+    parser.add_argument("--depth", default=18, type=int)
     parser.add_argument("--width_factor", default=8, type=int,
                         help="How many times wider compared to normal ResNet.")
     parser.add_argument("--model_name", type=str, default="Unknown")

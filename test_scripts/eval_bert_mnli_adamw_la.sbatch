@@ -9,7 +9,7 @@
 echo "Starting job ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
 
 PYTHON=/usr/bin/python3
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/software/sse/modules
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/software/sse/modules/Miniforge3
 
 $PYTHON evaluate.py \
     --save_file_name BERT_MNLI_AdamW_ll_full_mc_asdl_ood_acc.txt \

@@ -86,7 +86,7 @@ ssh <username>@berzelius.nsc.liu.se   # Auto assignment
 ## TODO
 
 - [x] SAM with ResNet18 on Cifar10
-- [ ] Ensemble x 5 (naive)
+- [x] Ensemble x 5 (naive)
 - [ ] Laplace
 - [ ] Packed Ensembles + Laplace
 - [ ] Transformers (ViT-x)
