@@ -125,7 +125,7 @@ Create a mamba environment with the correct python and torch version ([documenta
 ```bash
 module load Miniforge3/24.7.1-2-hpc1-bdist
 mamba create --name pytorch-2.5.1-python-3.10 python=3.10
-mamba activate pytorch-2.5.1-python-3.10
+mamba activate pytorch-2.5.1-python-3.100
 CONDA_OVERRIDE_CUDA=11.8 mamba install pytorch==2.5.1=cuda* torchvision=*=cuda* torchaudio=*=cuda*
 ```
 
@@ -137,6 +137,14 @@ vim ~/.bashrc
 # Add the following to the bottom of the file (G, o, ctrl+shift+v, esc, :wq)
 ```bash
 alias <name of choice>="mamba activate pytorch-2.5.1-python-3.10"
+```
+
+## Starting the Environment
+
+To run files, first mamba has to be activated:
+
+```bash
+startmamba
 ```
 
 ## Running With Multiple GPUs
