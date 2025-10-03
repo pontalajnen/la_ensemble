@@ -88,6 +88,7 @@ ssh <username>@berzelius.nsc.liu.se   # Auto assignment
 - [x] SAM with ResNet18 on Cifar10
 - [x] Ensemble x 5 (naive)
 - [ ] Laplace
+- [ ] Packed Ensembles
 - [ ] Packed Ensembles + Laplace
 - [ ] Transformers (ViT-x)
 - [ ] BatchEnsembles
@@ -154,3 +155,8 @@ interactive --gpus=x
 
 torchrun --nproc_per_node=2 train.py --distributed [other args]
 ```
+
+## Verify ResNet implementation
+
+- Check parameters
+- Forward pass med samma init
