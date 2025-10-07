@@ -23,5 +23,4 @@ class EnsembleModel(nn.Module):
 
         if self.training:
             return predictions
-        # TODO: Might want to do majority voting instead???
         return torch.stack(predictions, dim=0).mean(dim=0)

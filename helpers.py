@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
+import os 
 
 
-def common_arguments(parser: ArgumentParser):
-    parser.add_argument("--num_workers", type=int, default=2,
-                        help="Number of workers for the dataloader.")
-    return parser
+def print_info(script, text):     
+    script = script.split("/")[-1]     
+    padding = (max([len(file) for file in os.listdir(".")]) - len(script)) * " "
+    print(f"[{script}] {padding} ----- {text} -----")
