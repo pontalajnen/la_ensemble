@@ -12,7 +12,7 @@ from utils.paths import LOCAL_STORAGE, DATA_DIR, MODEL_PATH_LOCAL
 import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
 from utils.train_helpers import init_model, init_transformer, init_optimizer
-from utils.arguments import arguments
+from utils.arguments import train_args
 
 
 def train(args):
