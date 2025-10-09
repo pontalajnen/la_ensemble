@@ -3,3 +3,4 @@ cifar-10-batches-py
 __pycache__/
 wandb/
 experiment_results/
+.vscode
