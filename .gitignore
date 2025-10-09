@@ -4,3 +4,4 @@ __pycache__/
 wandb/
 experiment_results/
 .vscode
+data/*
