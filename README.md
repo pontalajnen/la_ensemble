@@ -160,3 +160,59 @@ torchrun --nproc_per_node=2 train.py --distributed [other args]
 
 - Check parameters
 - Forward pass med samma init
+
+## Tests to run
+
+- eval_resnet18_cifar10_sgd_la_GLM.sbatch
+- eval_resnet18_cifar10_sgd_la_NN.sbatch
+- eval_bert_mnli_adamw_la.sbatch
+- eval_bert_mnli_adamw_sam_adaptive_la.sbatch
+- eval_bert_mnli_adamw_sam_adaptive.sbatch
+- eval_bert_mnli_adamw_sam_la.sbatch
+- eval_bert_mnli_adamw_sam.sbatch
+- eval_bert_mnli_adamw.sbatch
+- eval_bert_mrpc_adamw_la.sbatch
+- eval_bert_mrpc_adamw_sam_adaptive_la.sbatch
+- eval_bert_mrpc_adamw_sam_adaptive.sbatch
+- eval_bert_mrpc_adamw_sam_la.sbatch
+- eval_bert_mrpc_adamw_sam.sbatch
+- eval_bert_mrpc_adamw.sbatch
+- eval_cifar10H.sbatch
+- eval_roberta_mnli_adamw_la.sbatch
+- eval_roberta_mnli_adamw_sam_adaptive_la.sbatch
+- eval_roberta_mnli_adamw_sam_adaptive.sbatch
+- eval_roberta_mnli_adamw_sam_la.sbatch
+- eval_roberta_mnli_adamw_sam.sbatch
+- eval_roberta_mnli_adamw.sbatch
+- eval_roberta_mrpc_adamw_la.sbatch
+- eval_roberta_mrpc_adamw_sam_adaptive_la.sbatch
+- eval_roberta_mrpc_adamw_sam_adaptive.sbatch
+- eval_roberta_mrpc_adamw_sam_la.sbatch
+- eval_roberta_mrpc_adamw_sam.sbatch
+- eval_roberta_mrpc_adamw.sbatch
+- eval_vit_cifar100_sgd_la.sbatch
+- eval_vit_cifar100_sgd_sam_la.sbatch
+- eval_vit_cifar100_sgd_sam.sbatch
+- eval_vit_cifar100_sgd.sbatch
+- eval_vit_cifar10_sgd_la.sbatch
+- eval_vit_cifar10_sgd_sam_la.sbatch
+- eval_vit_cifar10_sgd_sam.sbatch
+- eval_vit_cifar10_sgd.sbatch
+- resnet18_cifar100_sgd_la.sbatch
+- resnet18_cifar100_sgd_sam_la.sbatch
+- sharpness_resnet_cifar10_lanczos.sbatch
+- sharpness_resnet_cifar10.sbatch
+- sharpness_vit_cifar10.sbatch
+- sharpness_vit_lanzcos.sbatch
+- test_resnet18_cifar100_sgd_sam.sbatch
+- test_resnet18_cifar100_sgd.sbatch
+- test_resnet18_cifar10_sgd_H.sbatch
+- test_resnet18_cifar10_sgd_la.sbatch
+- Test_Resnet18_Cifar10_SGD_LA.sh
+- test_resnet18_cifar10_sgd_sam_la.sbatch
+- Test_Resnet18_Cifar10_SGD_SAM_LA.sh
+- test_resnet18_cifar10_sgd_sam.sbatch
+- Test_Resnet18_Cifar10_SGD_SAM.sh
+- test_resnet18_cifar10_sgd.sbatch
+- Test_Resnet18_Cifar10_SGD.sh
+- test_vit_cifar10H.sbatch
