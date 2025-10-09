@@ -133,7 +133,13 @@ class ResNet_packed(nn.Module):
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
+
+        if self.training:
+            return out
+        out = rearrange(out, "(m b) c -> b m c", m=self.num_estimators)
+        out = out.mean(dim=1)
         return out
+
 
 
 # ImageNet models

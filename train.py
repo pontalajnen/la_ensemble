@@ -15,7 +15,6 @@ from utils.train_helpers import init_model, init_transformer, init_optimizer
 from utils.train_args import arguments
 
 
-
 def train(args):
     # Set device
     if args.distributed:
@@ -27,7 +26,7 @@ def train(args):
         device = torch.device(f'cuda:{args.local_rank}')
     else:
         device = torch.device(
-            'cuda:0' if torch.cuda.is_available() else  # TODO: Not sure if ":0" is needed
+            'cuda:0' if torch.cuda.is_available() else
             'mps' if torch.backends.mps.is_available() else
             'cpu'
         )
@@ -135,6 +134,7 @@ def train(args):
     best_epoch = 0
     best_checkpoint_path = os.path.join(save_dir, f"model_{args.model}_seed{seed}_best.pth")
     packed = "ResNet_packed" in [type(m).__name__ for _, m in model.named_modules()]
+    num_estimators = model.module.num_estimators if model.module else model.num_estimators
     print("----- Start training loop -----")
     for epoch in tqdm(range(args.epochs), desc="Epochs"):
         train_sampler.set_epoch(epoch) if args.distributed else None
@@ -147,7 +147,7 @@ def train(args):
                     enable_running_stats(model)
                     loss = sum([criterion(
                         y_pred,
-                        y if not packed else y.repeat(model.num_estimators)
+                        y if not packed else y.repeat(num_estimators)
                     ) for y_pred in model(x)])
                     loss.mean().backward()
                     opt.first_step(zero_grad=True)
@@ -155,14 +155,14 @@ def train(args):
                     disable_running_stats(model)
                     loss = sum([criterion(
                         y_pred,
-                        y if not packed else y.repeat(model.num_estimators)
+                        y if not packed else y.repeat(num_estimators)
                     ) for y_pred in model(x)])
                     loss.mean().backward()
                     opt.second_step(zero_grad=True)
                 else:
                     loss = sum([criterion(
                         y_pred,
-                        y if not packed else y.repeat(model.num_estimators)
+                        y if not packed else y.repeat(num_estimators)
                     ) for y_pred in model(x)])
                     loss.backward()
                     opt.step()
@@ -172,7 +172,7 @@ def train(args):
                     enable_running_stats(model)
                     loss = criterion(
                         model(x),
-                        y if not packed else y.repeat(model.num_estimators)
+                        y if not packed else y.repeat(num_estimators)
                     ).mean()
                     loss.backward()
                     opt.first_step(zero_grad=True)
@@ -180,14 +180,13 @@ def train(args):
                     disable_running_stats(model)
                     criterion(
                         model(x),
-                        y if not packed else y.repeat(model.num_estimators)
+                        y if not packed else y.repeat(num_estimators)
                     ).mean().backward()
                     opt.second_step(zero_grad=True)
                 else:
-                    print("----------", model.module.num_estimators)
                     loss = criterion(
                         model(x),
-                        y if not packed else y.repeat(model.module.num_estimators)
+                        y if not packed else y.repeat(num_estimators)
                     )
                     loss.backward()
                     opt.step()
