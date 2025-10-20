@@ -13,13 +13,14 @@ from laplace.curvature.asdl import AsdlGGN, AsdlEF
 from laplace.curvature.backpack import BackPackGGN, BackPackEF
 # from laplace.curvature.curvature import CurvatureInterface
 from laplace.curvature.curvlinops import CurvlinopsEF, CurvlinopsGGN
-from helpers import common_arguments
+from utils.arguments import eval_args
+from pathlib import Path
 
 # Only for one model at a time, with possible ensemble but different paths
 
 
 def eval(args):
-    print("--- Starting evaluation ---")
+    print("[eval]: starting")
 
     if args.save_file_name == "":
         raise Exception("Provide a save_file_name!")
@@ -41,14 +42,14 @@ def eval(args):
     print("Using device: ", device)
 
     # Set Path to Datasets
-    DATA_PATH = LOCAL_STORAGE + DATA_DIR
-    RESULT_PATH = ROOT + RESULT_DIR
+    DATA_PATH = Path(LOCAL_STORAGE) / DATA_DIR
+    RESULT_PATH = Path(ROOT) / RESULT_DIR
 
     os.makedirs(RESULT_PATH, exist_ok=True)
 
-    print(RESULT_PATH + args.save_file_name)
-    if os.path.isfile(RESULT_PATH + args.save_file_name):
-        f = open(RESULT_PATH + args.save_file_name, 'r')
+    print(RESULT_PATH / args.save_file_name)
+    if os.path.isfile(RESULT_PATH / args.save_file_name):
+        f = open(RESULT_PATH / args.save_file_name, 'r')
         results = json.load(f)
     else:
         results = {}
@@ -240,7 +241,8 @@ def eval(args):
             results[model_name]['OOD FPR95'] = fpr_at_95_tpr_calc
             results[model_name]['OOD Accuracy'] = ood_acc.to("cpu").numpy().tolist()
 
-        with open(RESULT_PATH+args.save_file_name, 'w') as fp:
+        with open(RESULT_PATH/args.save_file_name, 'w') as fp:
+            print(RESULT_PATH/args.save_file_name)
             json.dump(results, fp)
 
         num_models += 1
@@ -253,7 +255,7 @@ def eval(args):
     # --------------------------------------------------------------------
     if num_models > 1:
         output_file = args.save_file_name.replace('.', '_summary.')
-        model_results = open(RESULT_PATH+args.save_file_name, 'r')
+        model_results = open(RESULT_PATH/args.save_file_name, 'r')
 
         metrics_data = {}
         for line_data in model_results.read().splitlines():
@@ -281,16 +283,16 @@ def eval(args):
                 "SE": np.std(values)/np.sqrt(num_models)
             }
 
-        with open(RESULT_PATH+output_file, 'w') as output:
+        with open(RESULT_PATH/output_file, 'w') as output:
             json.dump(metrics_summary, output, indent=4)
 
-        print("Metrics summary saved to ", {RESULT_PATH+output_file})
+        print("Metrics summary saved to ", {RESULT_PATH/output_file})
 
         # --------------------------------------------------------------------
         # Plot Reliability Diagram
         # --------------------------------------------------------------------
         if args.rel_plot:
-            PLOT_PATH = RESULT_PATH + "/rel_diag_probs/"
+            PLOT_PATH = RESULT_PATH / "/rel_diag_probs/"
             os.makedirs(PLOT_PATH, exist_ok=True)
             print(len(model_results_id))
             print(len(model_results_shift))
@@ -313,76 +315,7 @@ def encode_mnli(batch, tokenizer):
 
 
 def main():
-    parser = ArgumentParser()
-    parser.add_argument("--save_file_name", type=str, default="",
-                        help="The name of the file to save the results to.")
-    parser.add_argument("--model_path_file", type=str, default="",
-                        help="A file with the path(s) to the model instance(s) to evaluate.")
-    parser.add_argument("--model_type", type=str, default="",
-                        help="The type of model to evaluate (e.g. ResNet18, ResNet50, etc.)")
-    parser.add_argument("--NLP_model", type=str, default='bert-base-uncased',
-                        help="Path to checkpoint for fine-tuning")
-    parser.add_argument("--ViT_model", type=str, default='vit_base_patch16_224.orig_in21k',
-                        help="Path to checkpoint for fine-tuning")
-    parser.add_argument("--use_cpu", action=BooleanOptionalAction, default=False,
-                        help="Whether to use CPU for evaluation.")
-
-    # --------------------------------------------
-
-    parser.add_argument("--dataset", type=str, default="",  # Add check to only eval on correct dataset
-                        help="The dataset to evaluate on (e.g. CIFAR10, ImageNet etc.).")
-    parser.add_argument("--basic_augment", action=BooleanOptionalAction, default=True,
-                        help="True if you want to use basic augmentations (horizontal flip, random crop with padding).")
-    parser.add_argument("--val_split", type=int, default=0.0,
-                        help="Split the training set into train and validation set.")
-    parser.add_argument("--eval_ood", action=BooleanOptionalAction, default=True,
-                        help="Whether to evaluate on OOD data.")
-    parser.add_argument("--eval_shift", action=BooleanOptionalAction, default=True,
-                        help="Whether to evaluate on shifted data.")
-    parser.add_argument("--eval_train", action=BooleanOptionalAction, default=True,
-                        help="Whether to evaluate on training data (gives nll).")
-    parser.add_argument("--shift_severity", type=int, default=1,
-                        help="The severity of the shift to evaluate on (1-5).")
-    parser.add_argument("--ood_ds", type=str, default="openimage-o",
-                        help="The OOD dataset to use (e.g. openimage-o, fashion).")
-    parser.add_argument("--test_alt", type=str, default=None,
-                        help="The alternative test set to use (e.g. CIFAR10, CIFAR100).")
-    parser.add_argument("--batch_size", type=int, default=512,
-                        help="Batch size for evaluation.")
-    parser.add_argument("--normalize_pretrained_dataset", action=BooleanOptionalAction, default=False,
-                        help="Finetune the dataset using the normalization values of the pretrained dataset (VIT)")
-
-    parser.add_argument("--laplace", action=BooleanOptionalAction, default=False, type=bool,
-                        help="Whether to use Laplace approximation.")
-    parser.add_argument("--approx_link", default="mc", type=str,
-                        help="The approximation link to use (e.g. mc, probit, bridge, bridge_norm).")
-    parser.add_argument("--hessian_approx", default="full", type=str,
-                        help="The Hessian approximation to use (e.g. full, diag, kron).")
-    parser.add_argument("--subset_of_weights", default="last_layer", type=str,
-                        help="The subset of weights to use (e.g. last_layer, all).")
-    parser.add_argument("--plot", action=BooleanOptionalAction, default=False,
-                        help="Whether to plot reliability diagrams.")
-    parser.add_argument('--optimize_prior_precision', default=None, choices=['marglik', 'nll'],
-                        help='optimize prior precision according to specified method')
-    parser.add_argument('--backend', default=None,
-                        choices=['CurvlinopsGGN', 'CurvlinopsEF', 'AsdlGGN', 'AsdlEF', 'BackpackGGN', 'BackpackEF'],
-                        help='The backend used for Hessian approximations')
-    parser.add_argument('--mc_samples', default=10, type=int,
-                        help='The number of samples used for Monte Carlo approximation of predictive distribution.')
-    parser.add_argument('--num_data', default=1000, type=int,
-                        help='The number of data points for Subset-of-Data (SOD) approximate GP inference.')
-    parser.add_argument('--pred_type', default="glm", type=str,
-                        help='Prediction type has to be one of "nn" or "glm".')
-
-    parser.add_argument('--cifar10H', action=BooleanOptionalAction, default=False, type=bool,
-                        help="Whether to evaluate models trained on CIFAR10 on CIFAR-10-H")
-    parser.add_argument('--rel_plot', action=BooleanOptionalAction, default=False,
-                        help="Whether to reliability diagrams (both shift and id)")
-
-    parser = common_arguments(parser)
-
-    args = parser.parse_args()
-
+    args = eval_args()
     eval(args)
 
 

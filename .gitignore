@@ -5,3 +5,4 @@ wandb/
 experiment_results/
 .vscode
 self_notes/
+data/*

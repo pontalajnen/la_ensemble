@@ -88,12 +88,19 @@ ssh <username>@berzelius.nsc.liu.se   # Auto assignment
 - [x] SAM with ResNet18 on Cifar10
 - [x] Ensemble x 5 (naive)
 - [ ] Laplace
-- [ ] Packed Ensembles
+- [ ] Packed Ensembles (AdamW and SAM)
 - [ ] Packed Ensembles + Laplace
-- [ ] Transformers (ViT-x)
-- [ ] BatchEnsembles
-- [ ] Laplace on Batch
 - [ ] Cifar100
+- [ ] BatchEnsembles
+- [ ] Transformers (ViT-x)
+- [ ] Laplace on Batch
+
+interactive -C "fat"
+
+resnet18 på cifar10 och 100 (laplace)
+sam (laplace)
+ensemble (subset i laplace biblioteket)
+packed ensemble
 
 ## Questions For Erik
 
