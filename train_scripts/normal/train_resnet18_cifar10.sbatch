@@ -22,4 +22,8 @@ mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
 
 # Train and save the exit code of the python script
-torchrun --nproc_per_node=1 train.py --distributed --model ResNet18 --dataset CIFAR10 --batch_size 128 --val_split 0.1
+torchrun --nproc_per_node=1 train.py \
+    --distributed \
+    --model ResNet18 \
+    --dataset CIFAR10 \
+    --val_split 0.1
