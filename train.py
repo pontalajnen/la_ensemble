@@ -125,72 +125,41 @@ def train(args):
 
     model = init_model(args, device, num_classes)
 
-    # Optimizer
     opt, scheduler = init_optimizer(args, model)
 
-    # Loss function
     criterion = nn.CrossEntropyLoss()
     best_val_loss = float("inf")
     best_epoch = 0
     best_checkpoint_path = os.path.join(save_dir, f"model_{args.model}_seed{seed}_best.pth")
     packed = "ResNet_packed" in [type(m).__name__ for _, m in model.named_modules()]
-    num_estimators = model.module.num_estimators if model.module else model.num_estimators
-    print("----- Start training loop -----")
+    if packed:
+        num_estimators = model.module.num_estimators if model.module else model.num_estimators
+    else:
+        num_estimators = 1
+
+    print("[loop]: starting")
     for epoch in tqdm(range(args.epochs), desc="Epochs"):
         train_sampler.set_epoch(epoch) if args.distributed else None
         model.train()
 
         for batch_idx, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device)
-            if args.ensemble:
-                if args.SAM:
-                    enable_running_stats(model)
-                    loss = sum([criterion(
-                        y_pred,
-                        y if not packed else y.repeat(num_estimators)
-                    ) for y_pred in model(x)])
-                    loss.mean().backward()
-                    opt.first_step(zero_grad=True)
+            y = y.repeat(num_estimators) if packed else y
+            if args.SAM:
+                enable_running_stats(model)
+                loss = sum([criterion(pred, y) for pred in model(x)]) if args.ensemble else criterion(model(x), y)
+                loss.mean().backward()
+                opt.first_step(zero_grad=True)
 
-                    disable_running_stats(model)
-                    loss = sum([criterion(
-                        y_pred,
-                        y if not packed else y.repeat(num_estimators)
-                    ) for y_pred in model(x)])
-                    loss.mean().backward()
-                    opt.second_step(zero_grad=True)
-                else:
-                    loss = sum([criterion(
-                        y_pred,
-                        y if not packed else y.repeat(num_estimators)
-                    ) for y_pred in model(x)])
-                    loss.backward()
-                    opt.step()
-                    opt.zero_grad()
+                disable_running_stats(model)
+                loss = sum([criterion(pred, y) for pred in model(x)]) if args.ensemble else criterion(model(x), y)
+                loss.mean().backward()
+                opt.second_step(zero_grad=True)
             else:
-                if args.SAM:
-                    enable_running_stats(model)
-                    loss = criterion(
-                        model(x),
-                        y if not packed else y.repeat(num_estimators)
-                    ).mean()
-                    loss.backward()
-                    opt.first_step(zero_grad=True)
-
-                    disable_running_stats(model)
-                    criterion(
-                        model(x),
-                        y if not packed else y.repeat(num_estimators)
-                    ).mean().backward()
-                    opt.second_step(zero_grad=True)
-                else:
-                    loss = criterion(
-                        model(x),
-                        y if not packed else y.repeat(num_estimators)
-                    )
-                    loss.backward()
-                    opt.step()
-                    opt.zero_grad()
+                loss = sum([criterion(pred, y) for pred in model(x)]) if args.ensemble else criterion(model(x), y)
+                loss.backward()
+                opt.step()
+                opt.zero_grad()
 
         # Validation loop
         val_accuracy, val_loss = evaluate_model(model, val_loader, device, criterion)

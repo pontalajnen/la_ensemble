@@ -15,7 +15,7 @@ def init_model(args, device, num_classes):
     if args.model == "ResNet18":
         if args.packed:
             print("[model] Using ResNet18 packed")
-            models = ResNet18_packed()
+            models = ResNet18_packed(num_classes)
         elif args.ensemble:
             models = EnsembleModel(
                 num_models=args.num_ensemble_models,
@@ -23,7 +23,7 @@ def init_model(args, device, num_classes):
                 model=torch_resnet18
             )
         else:
-            models = ResNet18()
+            models = ResNet18(num_classes)
 
         print("[model] loaded")
         models = models.to(device)
