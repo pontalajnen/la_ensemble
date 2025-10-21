@@ -3,16 +3,19 @@ import os
 import json
 import numpy as np
 import torch
-from argparse import ArgumentParser, BooleanOptionalAction
-from utils.eval import load_model, eval_train_data, plot_multi_model_reliability, eval_ood_data, eval_data
+from utils.eval import (
+    load_model,
+    eval_train_data,
+    plot_multi_model_reliability,
+    eval_ood_data,
+    eval_data,
+    BACKENDS
+)
 from utils.data import load_hf_dataset, load_vision_dataset
 from laplace import Laplace
 from utils.paths import ROOT, LOCAL_STORAGE, DATA_DIR, RESULT_DIR
 # from laplace.curvature.asdfghjkl import AsdfghjklHessian
-from laplace.curvature.asdl import AsdlGGN, AsdlEF
-from laplace.curvature.backpack import BackPackGGN, BackPackEF
 # from laplace.curvature.curvature import CurvatureInterface
-from laplace.curvature.curvlinops import CurvlinopsEF, CurvlinopsGGN
 from utils.arguments import eval_args
 from pathlib import Path
 
@@ -26,7 +29,6 @@ def eval(args):
         raise Exception("Provide a save_file_name!")
     if args.model_path_file == "":
         raise Exception("Provide a model_name_file!")
-    # root_dir = ROOT + "/"
 
     model_paths = open(ROOT + "/eval_path_files/" + args.model_path_file, "r")
 
@@ -39,7 +41,7 @@ def eval(args):
 
     if args.use_cpu:
         device = torch.device('cpu')
-    print("Using device: ", device)
+    print(f"[device]: {device}")
 
     # Set Path to Datasets
     DATA_PATH = Path(LOCAL_STORAGE) / DATA_DIR
@@ -54,12 +56,7 @@ def eval(args):
     else:
         results = {}
 
-    # --------------------------------------------------------------------
-    # Load Dataset
-    # --------------------------------------------------------------------
-
-    # Get Dataset
-    print("Loading dataset: ", args.dataset)
+    print(f"[dataset]: loading {args.dataset}")
     if args.dataset in ("CIFAR10", "CIFAR100", "MNIST", "ImageNet"):
         nlp, dm, num_classes, train_loader, val_loader, test_loader, shift_loader, ood_loader = load_vision_dataset(
             dataset=args.dataset,
@@ -87,16 +84,8 @@ def eval(args):
         )
     else:
         raise Exception("Requested dataset does not exist!")
-    print("--- Loading done ---")
+    print("[dataset]: loading done")
 
-    # --------------------------------------------------------------------
-    #  Models
-    # --------------------------------------------------------------------
-
-    # more than one model can be in the model path file
-    # in that case, mean and standard error of the mean is calculated
-    # for each metric
-    # counter is needed to keep track of the number of models
     num_models = 0
 
     # prepare reliability diagram plot
@@ -132,11 +121,10 @@ def eval(args):
                 num_models += 1
                 continue
 
-        print("Loading model: ", model_name)
         feature_reduction, model = load_model(name=args.model_type, vit=args.ViT_model, nlp=args.NLP_model,
                                               path=model_path, device=device, num_classes=num_classes)
         print(args.model_type, model_path)
-        print("Evaluate model!")
+        print("[eval]: starting")
         model.eval()
         model = model.to(device)
 
@@ -144,25 +132,10 @@ def eval(args):
         # Laplace Approximation
         # --------------------------------------------------------------------
         pred_type = args.pred_type
-        # Laplace approximation
         if args.laplace:
-            print("... Laplace approximation ...")
-            if args.backend == "BackpackGGN":
-                backend = BackPackGGN
-            elif args.backend == "BackpackEF":
-                backend = BackPackEF
-            elif args.backend == "AsdlGGN":
-                backend = AsdlGGN
-            elif args.backend == "AsdlEF":
-                backend = AsdlEF
-            elif args.backend == "CurvlinopsGGN":
-                backend = CurvlinopsGGN
-            elif args.backend == "CurvlinopsEF":
-                backend = CurvlinopsEF
-            elif args.backend is None:
-                backend = CurvlinopsGGN
-            else:
-                raise Exception("This backend is not supported!")
+            print("[laplace]: approximation")
+            backend = BACKENDS[args.backend]
+            
             pred_type = args.pred_type
             if args.hessian_approx == "gp":
                 model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
@@ -186,13 +159,13 @@ def eval(args):
         # Start Evaluation
         # --------------------------------------------------------------------
         if not train_done and args.eval_train:
-            print("... training data ...")
+            print("[eval]: training data")
             nll_value = eval_train_data(model, train_loader, laplace=args.laplace, device=device, link=args.approx_link,
                                         mc_samples=args.mc_samples, pred_type=pred_type)
             results[model_name]['Train nll'] = nll_value
 
         if not in_done:
-            print("... test data ...")
+            print("[eval]: test data")
             if args.rel_plot is True:
                 rel_plot = "ID"
             else:
@@ -212,7 +185,7 @@ def eval(args):
                                     "y_true": y_target_id})
 
         if not shift_done and args.eval_shift and shift_loader is not None:
-            print("... shift data ...")
+            print("[eval]: shift data")
             if rel_plot == "ID":
                 rel_plot = "SHIFT"
             else:
@@ -230,7 +203,7 @@ def eval(args):
                                         "y_true": y_target_shift})
 
         if not ood_done and args.eval_ood and ood_loader is not None:
-            print("... ood data ...")
+            print("[eval]: ood data")
             auroc_calc, fpr_at_95_tpr_calc, ood_acc = eval_ood_data(model, ood_loader, device=device,
                                                                     num_classes=num_classes,
                                                                     OOD_y_preds_logits=OOD_y_preds_logits,
@@ -246,10 +219,10 @@ def eval(args):
             json.dump(results, fp)
 
         num_models += 1
-        print("Model evaluated!")
+        print(f"[eval]: {model_name} done")
 
-    print("All models evaluated!")
-    print("Saving results to file: ", args.save_file_name)
+    print("[eval]: all models done")
+    print(f"[saving]: filename {args.save_file_name}")
     # --------------------------------------------------------------------
     # Calculate average over evaluated models and store it in JSON file
     # --------------------------------------------------------------------

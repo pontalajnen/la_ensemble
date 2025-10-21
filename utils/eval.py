@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 # from models.resnet import *
-from models.resnet import torch_resnet18, torch_resnet56
+from models.resnet import torch_resnet56, ResNet18
 # from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score, roc_curve
 from sklearn import metrics
 # from torch.utils.data import DataLoader
@@ -24,14 +24,29 @@ from models.bert import BERT
 from models.hf import HF
 # from transformers import AutoModelForSequenceClassification
 import plotly.graph_objects as go
+from laplace.curvature.asdl import AsdlGGN, AsdlEF
+from laplace.curvature.backpack import BackPackGGN, BackPackEF
+from laplace.curvature.curvlinops import CurvlinopsEF, CurvlinopsGGN
+
+
+BACKENDS = {
+    "BackpackGGN": BackPackGGN,
+    "BackpackEF": BackPackEF,
+    "AsdlGGN": AsdlGGN,
+    "AsdlEF": AsdlEF,
+    "CurvlinopsGGN": CurvlinopsGGN,
+    "CurvlinopsEF": CurvlinopsEF,
+    None: CurvlinopsGGN
+}
 
 
 def load_model(name, vit, nlp, path, device, num_classes):
-    print(num_classes)
+    print(f"[num_classes]: {num_classes}")
+    print(f"[model]: loading {name}")
     # Load the model from the specified path
     feature_reduction = None
     if name == 'ResNet18':
-        model = torch_resnet18(num_classes=num_classes)
+        model = ResNet18(num_classes=num_classes)
     elif name == 'ResNet56':
         model = torch_resnet56(num_classes=num_classes)
     elif name == "ViT":
@@ -48,8 +63,7 @@ def load_model(name, vit, nlp, path, device, num_classes):
     if name == "ROBERTA":
         model.model.load_state_dict(torch.load(path, map_location=device, weight_only=True))
     else:
-        print(path)
-        model.load_state_dict(torch.load(path, map_location=device))
+        model.load_state_dict(torch.load(path, map_location=device, weights_only=True))
     model.to(device)
     return feature_reduction, model
 
