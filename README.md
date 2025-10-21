@@ -42,11 +42,6 @@ There are currently three training scripts:
   Modified script that supports training **language models**.  
   It *should* also work with vision models, but this hasn't been fully tested.
 
-- `train_lang_OLD.py`  
-  ⚠️ **Deprecated** — do not use.  
-  This was an older version with a different approach to managing Weights & Biases sweeps.  
-  It will be removed in a future version.
-
 > 📝 **Example bash scripts** for training can be found in the `train_scripts/` directory.
 
 ---
