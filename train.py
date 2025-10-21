@@ -1,4 +1,3 @@
-from argparse import ArgumentParser, BooleanOptionalAction
 import torch
 import os
 import wandb
@@ -22,7 +21,7 @@ def train(args):
         if not dist.is_initialized():
             dist.init_process_group(backend='nccl')
         torch.cuda.set_device(args.local_rank)
-        print(args.local_rank, "local rank")
+        print(f"[local rank]: {args.local_rank}")
         device = torch.device(f'cuda:{args.local_rank}')
     else:
         device = torch.device(
@@ -31,16 +30,13 @@ def train(args):
             'cpu'
         )
 
-    print("Device:", device)
+    print("[device]:", device)
 
-    # AVOID WANDB TIMEOUT
     os.environ['WANDB_INIT_TIMEOUT'] = '800'
 
-    # Set path to datasets
     DATA_PATH = LOCAL_STORAGE + DATA_DIR
     # os.makedirs(DATA_PATH, exist_ok=True)
 
-    # Load the dataset
     dm, num_classes = load_data_module(
         args.dataset,
         DATA_PATH,
@@ -87,7 +83,7 @@ def train(args):
 
     images, labels = next(iter(train_loader))
 
-    print("Loaded the dataset!")
+    print("[dataset]: loaded")
     wandb.login()
 
     seed = args.seed
@@ -137,7 +133,7 @@ def train(args):
     else:
         num_estimators = 1
 
-    print("[loop]: starting")
+    print("[training loop]: starting")
     for epoch in tqdm(range(args.epochs), desc="Epochs"):
         train_sampler.set_epoch(epoch) if args.distributed else None
         model.train()
@@ -165,41 +161,41 @@ def train(args):
         val_accuracy, val_loss = evaluate_model(model, val_loader, device, criterion)
 
         if args.distributed:
-            # Gather validation results from all processes
             val_accuracy = torch.tensor(val_accuracy, device=device)
             val_loss = torch.tensor(val_loss, device=device)
             dist.all_reduce(val_accuracy, op=dist.ReduceOp.SUM)
             dist.all_reduce(val_loss, op=dist.ReduceOp.SUM)
             val_accuracy /= dist.get_world_size()
             val_loss /= dist.get_world_size()
-        # Log validation accuracy
+
         wandb.log({"epoch": epoch, "val_accuracy": val_accuracy,
                    "val_loss": val_loss, "lr": scheduler.get_last_lr()[0]})
 
-        # Save and track the best model
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_epoch = epoch
-            torch.save(model.state_dict(), best_checkpoint_path)  # Overwrites temp file
+            state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+            torch.save(state, best_checkpoint_path)
 
         scheduler.step()
 
-    print("Finished training loop!")
+    print("[training loop]: finished")
     # Rename the best checkpoint with metadata
     final_checkpoint_path = os.path.join(
         save_dir,
         (f"seed={seed}-epoch={best_epoch:02d}-val_loss={best_val_loss:.4f}-model={args.model}-"
          f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
     )
-    os.rename(best_checkpoint_path, final_checkpoint_path)  # Rename the best model file
+    os.rename(best_checkpoint_path, final_checkpoint_path)
 
     last_epoch_checkpoint_path = os.path.join(
         save_dir,
         (f"seed={seed}-epoch={args.epochs}-val_loss={val_loss:.4f}-model={args.model}-"
          f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
     )
-    # Store model after last epoch
-    torch.save(model.state_dict(), last_epoch_checkpoint_path)
+
+    state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+    torch.save(state, last_epoch_checkpoint_path)
 
     artifact.add_file(final_checkpoint_path)
     wandb.log_artifact(artifact)
@@ -213,3 +209,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+    if dist.is_initialized():
+        dist.barrier()
+        torch.cuda.synchronize()
+        dist.destroy_process_group()
