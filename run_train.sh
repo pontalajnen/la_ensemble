@@ -4,5 +4,5 @@ torchrun \
     train.py \
     --distributed \
     --val_split 0.1 \
-    --epochs 200 \
+    --epochs 10 \
     "$@"
