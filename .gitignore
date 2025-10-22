@@ -7,3 +7,4 @@ experiment_results/
 self_notes/
 data/*
 logs/
+load_env.sh
