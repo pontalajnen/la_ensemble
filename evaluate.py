@@ -216,7 +216,7 @@ def eval(args):
 
         with open(RESULT_PATH/args.save_file_name, 'w') as fp:
             print(RESULT_PATH/args.save_file_name)
-            json.dump(results, fp)
+            json.dump(results, fp, indent=4)
 
         num_models += 1
         print(f"[eval]: {model_name} done")

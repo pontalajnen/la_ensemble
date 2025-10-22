@@ -232,9 +232,6 @@ def eval_ood_data(model, ood_dataloader, device, num_classes, OOD_y_preds_logits
     accuracy = Accuracy(task="multiclass", num_classes=num_classes).to(device)
 
     with torch.no_grad():
-        # for images, labels in ood_dataloader:
-        #    images = images.to(device)
-        #    labels = labels.to(device)
         for batch in ood_dataloader:
             if isinstance(batch, list):
                 x, y = batch
