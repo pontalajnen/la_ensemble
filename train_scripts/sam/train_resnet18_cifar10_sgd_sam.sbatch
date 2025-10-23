@@ -1,14 +1,30 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#SBATCH --output=/proj/berzelius-aiics-real/users/x_ponhe/la_ensamble/logs/%A_%a_slurm.out
+#SBATCH --error=/proj/berzelius-aiics-real/users/x_ponhe/la_ensamble/logs/%A_%a_slurm.err
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-user="ponhe215@student.liu.se"
 #SBATCH --gres gpu:1
-#SBATCH --mem 8GB
-#SBATCH --cpus-per-task 4
 #SBATCH --time 48:00:00
-#SBATCH --output /Midgard/home/%u/thesis/logs/%J_slurm.out
-#SBATCH --error  /Midgard/home/%u/thesis/logs/%J_slurm.err
+#SBATCH -C "thin"
 
 echo "Starting job ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
 
-PYTHON=/Midgard/home/kadec/miniforge3/envs/myenv/bin/python
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/Midgard/home/kadec/miniforge3
+# Activate conda
+module load Miniforge3/24.7.1-2-hpc1-bdist
+mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
-$PYTHON train.py --model ResNet18 --dataset CIFAR10 --batch_size 128 --val_split 0.1 --seed 10 --seeds_per_job 5 --SAM
+# Load gcc for compilation
+#module load gcc
+
+# Extract files
+# mkdir /scratch/local/cifar10
+# tar -xf /proj/berzelius-aiics-real/users/x_ponhe/la_ensamble/data/cifar10-python.tar.gz -C /scratch/local/cifar10
+
+
+# Train and save the exit code of the python script
+torchrun --nproc_per_node=1 train.py \
+    --distributed \
+    --model ResNet18 \
+    --dataset CIFAR10 \
+    --val_split 0.1 \
+    --SAM

@@ -103,9 +103,6 @@ packed ensemble
 
 ## Berzelius Documentation
 
-**Project storage directories available to you:**
-/proj/berzelius-aiics-real
-
 **Documentation and getting help:**
 [Getting Started](https://www.nsc.liu.se/support/systems/berzelius-getting-started/)
 [Support](https://www.nsc.liu.se/support)
