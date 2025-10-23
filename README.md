@@ -99,7 +99,8 @@ packed ensemble
 
 ## Questions For Erik
 
-- Hyperparametrar, hur ska vi gå tillväga, eller ska vi kopiera??
+- Omstrukturera/tips på testning. Blir många filer och mycket att hålla koll på
+- Körtider för full hessian laplace
 
 ## Berzelius Documentation
 
