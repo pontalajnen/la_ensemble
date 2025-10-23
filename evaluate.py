@@ -125,8 +125,8 @@ def eval(args):
                                               path=model_path, device=device, num_classes=num_classes)
         print(args.model_type, model_path)
         print("[eval]: starting")
-        model.eval()
         model = model.to(device)
+        model.eval()
 
         # --------------------------------------------------------------------
         # Laplace Approximation
@@ -150,7 +150,16 @@ def eval(args):
             else:
                 model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
                                 subset_of_weights=args.subset_of_weights, backend=backend)
-            model.fit(train_loader, progress_bar=True)
+            if device.type == "cuda":
+                torch.cuda.set_device(device)
+                _ = torch.tensor(0., device=device)
+                torch.cuda.synchronize(device)
+            with torch.cuda.device(device):
+                print(f"[laplace]: fitting")
+                model.fit(train_loader, progress_bar=True)
+            if device.type == "cuda":
+                torch.cuda.synchronize(device)
+            print(f"[laplace]: done fitting")
             if args.optimize_prior_precision is not None:
                 model.optimize_prior_precision(pred_type=pred_type, method=args.optimize_prior_precision,
                                                link_approx=args.approx_link, val_loader=val_loader)

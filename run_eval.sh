@@ -5,5 +5,6 @@ python3 evaluate.py \
     --dataset CIFAR10 \
     --batch_size 8 \
     --no-eval_train \
+    --hessian_approx kron \
     --laplace \
     "$@"

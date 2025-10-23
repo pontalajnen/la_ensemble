@@ -183,14 +183,14 @@ def train(args):
     # Rename the best checkpoint with metadata
     final_checkpoint_path = os.path.join(
         save_dir,
-        (f"seed={seed}-epoch={best_epoch:02d}-val_loss={best_val_loss:.4f}-model={args.model}-"
+        (f"model={args.model}-epoch={best_epoch:02d}-val_loss={best_val_loss:.4f}-"
          f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
     )
     os.rename(best_checkpoint_path, final_checkpoint_path)
 
     last_epoch_checkpoint_path = os.path.join(
         save_dir,
-        (f"seed={seed}-epoch={args.epochs}-val_loss={val_loss:.4f}-model={args.model}-"
+        (f"model={args.model}-epoch={args.epochs}-val_loss={val_loss:.4f}-"
          f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
     )
 

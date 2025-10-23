@@ -82,7 +82,7 @@ ssh <username>@berzelius.nsc.liu.se   # Auto assignment
 
 - [x] SAM with ResNet18 on Cifar10
 - [x] Ensemble x 5 (naive)
-- [ ] Laplace
+- [x] Laplace
 - [ ] Packed Ensembles (AdamW and SAM)
 - [ ] Packed Ensembles + Laplace
 - [ ] Cifar100
