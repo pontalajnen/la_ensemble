@@ -5,5 +5,5 @@ torchrun \
     --distributed \
     --val_split 0.1 \
     --epochs 10 \
-    --SAM \
+    --ensemble
     "$@"
