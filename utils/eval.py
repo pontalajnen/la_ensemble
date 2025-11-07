@@ -38,22 +38,22 @@ def load_model(name, vit, nlp, path, device, num_classes):
     print(f"[model]: loading {name}")
     # Load the model from the specified path
     feature_reduction = None
-    if name == 'ResNet18':
+    if name == 'resnet18':
         model = ResNet18(num_classes=num_classes)
-    elif name == 'ResNet56':
+    elif name == 'resnet56':
         model = torch_resnet56(num_classes=num_classes)
-    elif name == "ViT":
+    elif name == "vit":
         model = timm.create_model(vit, pretrained=False, num_classes=num_classes)
-    elif name == "BERT":
+    elif name == "bert":
         model = BERT(device=device, model=nlp, num_labels=num_classes)
         # as hugging face models are loaded, this would not strictly be necessary
         feature_reduction = "pick_first"
-    elif name == "ROBERTA":
+    elif name == "roberta":
         model = HF(device=device, model=nlp, num_labels=num_classes)
         feature_reduction = "pick_first"
     else:
         raise Exception("Oops, requested model is not supported!")
-    if name == "ROBERTA":
+    if name == "roberta":
         model.model.load_state_dict(torch.load(path, map_location=device, weight_only=True))
     else:
         model.load_state_dict(torch.load(path, map_location=device, weights_only=True))
@@ -369,7 +369,7 @@ def save_reliability_plot(y_probs, y_true, model_name, color, n_bins=10, error_t
         width=width,
         error_y=dict(
             type='data',
-            array=bin_errors,
+            array=bin_errors,  # noqa # type: ignore
             visible=True,
             color='black',
             thickness=1.5,

@@ -12,7 +12,7 @@ from utils.sam import SAM
 
 
 def init_model(args, device, num_classes):
-    if args.model == "ResNet18":
+    if args.model == "resnet18":
         if args.packed:
             print("[model] Using ResNet18 packed")
             models = ResNet18_packed(num_classes)
@@ -28,12 +28,12 @@ def init_model(args, device, num_classes):
         print("[model] loaded")
         models = models.to(device)
 
-    elif args.model == "ViT":
+    elif args.model == "vit":
         models = timm.create_model('vit_base_patch16_224.orig_in21k', pretrained=True, num_classes=num_classes)
         models = models.to(device)
-        print("----- Model ready and on device -----")
     else:
-        raise Exception("Requested model does not exist! Has to be one of 'ResNet18', 'ViT'")
+        raise Exception("Requested model does not exist! Has to be one of 'resNet18', 'vit'")
+
     if args.distributed:
         models = DDP(models, device_ids=[args.local_rank])
 

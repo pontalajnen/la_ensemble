@@ -3,12 +3,9 @@ from argparse import ArgumentParser, BooleanOptionalAction
 
 def eval_args():
     parser = ArgumentParser()
-    parser.add_argument("--save_file_name", type=str, default="",
-                        help="The name of the file to save the results to.")
-    parser.add_argument("--model_path_file", type=str, default="",
-                        help="A file with the path(s) to the model instance(s) to evaluate.")
-    parser.add_argument("--model_type", type=str, default="",
-                        help="The type of model to evaluate (e.g. ResNet18, ResNet50, etc.)")
+    parser.add_argument("--save_file_name", type=str, required=True)
+    parser.add_argument("--model_path_file", type=str, required=True)
+    parser.add_argument("--model_type", type=str, required=True)
     parser.add_argument("--NLP_model", type=str, default='bert-base-uncased',
                         help="Path to checkpoint for fine-tuning")
     parser.add_argument("--ViT_model", type=str, default='vit_base_patch16_224.orig_in21k',
@@ -70,6 +67,7 @@ def eval_args():
 
     parser.add_argument("--num_workers", type=int, default=2,
                         help="Number of workers for the dataloader.")
+    parser.add_argument("--redo", action=BooleanOptionalAction, default=False)
 
     args = parser.parse_args()
     return args

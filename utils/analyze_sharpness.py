@@ -100,7 +100,7 @@ def main():
             dataset=args.dataset,
             model_type=args.model_type,
             ViT_model=args.ViT_model,
-            DATA_PATH=DATA_PATH,
+            data_path=DATA_PATH,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
             val_split=args.val_split,

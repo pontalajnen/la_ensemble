@@ -13,24 +13,24 @@ import numpy as np
 from functools import partial
 
 
-def load_data_module(dataset, root, batch_size, eval_ood=False, eval_shift=False, shift_severity=1,
+def load_data_module(dataset, args, root, batch_size, eval_ood=False, eval_shift=False, shift_severity=1,
                      num_workers=1, val_split=0.0, test_alt=None, ood_ds="openimage-o", basic_augment=True):
-    if dataset == "CIFAR10":
+    if dataset == "cifar10":
         num_classes = 10
         dm = CIFAR10DataModule(root=root, batch_size=batch_size, num_workers=num_workers, val_split=val_split,
                                test_alt=test_alt, eval_ood=eval_ood, eval_shift=eval_shift,
                                shift_severity=shift_severity, basic_augment=basic_augment)
-    elif dataset == "CIFAR100":
+    elif dataset == "cifar100":
         num_classes = 100
         dm = CIFAR100DataModule(root=root, batch_size=batch_size, num_workers=num_workers, val_split=val_split,
                                 eval_ood=eval_ood, eval_shift=eval_shift, shift_severity=shift_severity,
                                 basic_augment=basic_augment)
-    elif dataset == "ImageNet":
+    elif dataset == "imagenet":
         num_classes = 1000
         dm = ImageNetDataModule(root=root, batch_size=batch_size, num_workers=num_workers, val_split=val_split,
                                 test_alt=test_alt, ood_ds=ood_ds, eval_ood=eval_ood, eval_shift=eval_shift,
                                 basic_augment=basic_augment)
-    elif dataset == "MNIST":
+    elif dataset == "mnist":
         num_classes = 10
         if ood_ds == "openimage-o":
             ood_ds = "fashion"
@@ -154,9 +154,9 @@ def encode_mnli(batch, tokenizer):
     return tokenizer(batch["premise"], batch["hypothesis"], truncation=True, padding="max_length", max_length=256)
 
 
-def load_vision_dataset(dataset, model_type, ViT_model, DATA_PATH, batch_size, num_workers, val_split, test_alt,
+def load_vision_dataset(dataset, args, model_type, ViT_model, data_path, batch_size, num_workers, val_split, test_alt,
                         eval_ood, eval_shift, shift_severity, basic_augment, ood_ds, normalize_pretrained_dataset):
-    dm, num_classes = load_data_module(dataset, DATA_PATH, batch_size=batch_size, num_workers=num_workers,
+    dm, num_classes = load_data_module(dataset, data_path, batch_size=batch_size, num_workers=num_workers,
                                        val_split=val_split, test_alt=test_alt, eval_ood=eval_ood, eval_shift=eval_shift,
                                        shift_severity=shift_severity, basic_augment=basic_augment, ood_ds=ood_ds)
     if model_type == "ViT":
@@ -168,9 +168,9 @@ def load_vision_dataset(dataset, model_type, ViT_model, DATA_PATH, batch_size, n
             # size = processor.size["height"]
             normalize = v2.Normalize(mean=image_mean, std=image_std)
         else:
-            if dataset == "CIFAR10":
+            if dataset == "cifar10":
                 normalize = v2.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.201])
-            elif dataset == "CIFAR100":
+            elif dataset == "cifar100":
                 normalize = v2.Normalize(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761])
 
         dm.train_transform = v2.Compose([
@@ -201,11 +201,12 @@ def load_vision_dataset(dataset, model_type, ViT_model, DATA_PATH, batch_size, n
             dm.shift = TransformWrapper(dm.shift, dm.test_transform)
             shift_loader = dm.test_dataloader()[2]
             images, labels = next(iter(shift_loader))
+    else:
+        shift_loader = None
 
     if eval_ood:
         ood_loader = dm.test_dataloader()[1]
         images, labels = next(iter(ood_loader))
-        print(images.shape)
 
     dm.setup("fit")
     train_loader = dm.train_dataloader()
