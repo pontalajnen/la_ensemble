@@ -141,7 +141,6 @@ class ResNet_packed(nn.Module):
         return out
 
 
-
 # ImageNet models
 def ResNet18_packed(num_estimators=4, alpha=2, gamma=1):
     return ResNet_packed(BasicBlock_packed, [2, 2, 2, 2])

@@ -12,11 +12,11 @@ import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
 from utils.train_helpers import init_model, init_transformer, init_optimizer
 from utils.arguments import train_args
+from utils.helpers import torch_device
 from pathlib import Path
 
 
 def train(args):
-    # Set device
     if args.distributed:
         args.local_rank = int(os.environ['LOCAL_RANK'])
         if not dist.is_initialized():
@@ -25,21 +25,17 @@ def train(args):
         print(f"[local rank]: {args.local_rank}")
         device = torch.device(f'cuda:{args.local_rank}')
     else:
-        device = torch.device(
-            'cuda:0' if torch.cuda.is_available() else
-            'mps' if torch.backends.mps.is_available() else
-            'cpu'
-        )
+        device = torch_device()
 
     print("[device]:", device)
 
     os.environ['WANDB_INIT_TIMEOUT'] = '800'
 
     DATA_PATH = LOCAL_STORAGE + DATA_DIR
-    # os.makedirs(DATA_PATH, exist_ok=True)
 
     dm, num_classes = load_data_module(
         args.dataset,
+        args,
         DATA_PATH,
         batch_size=args.batch_size,
         num_workers=args.num_workers,
@@ -47,7 +43,7 @@ def train(args):
         basic_augment=args.basic_augment
     )
 
-    if args.model == "ViT":
+    if args.model == "vit":
         dm = init_transformer(args, dm)
 
     dm.prepare_data()
@@ -89,6 +85,7 @@ def train(args):
 
     seed = args.seed
     model_name = args.model + "_" + args.dataset + "_" + args.base_optimizer
+    model_name += "_ensemble" if args.ensemble else ""
     torch_seed = torch.Generator()
     torch_seed.manual_seed(seed)
     torch.manual_seed(seed)
@@ -207,7 +204,7 @@ def main():
     args = train_args()
 
     save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
-    if Path(save_dir).exists() and any(Path(save_dir).iterdir()):
+    if Path(save_dir).exists() and any(Path(save_dir).iterdir()):  # TODO: Make more robust
         print(f"[main]: model already trained at {save_dir}, skipping...")
         return
 

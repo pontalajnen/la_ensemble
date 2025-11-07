@@ -18,51 +18,36 @@ from utils.paths import ROOT, LOCAL_STORAGE, DATA_DIR, RESULT_DIR
 # from laplace.curvature.curvature import CurvatureInterface
 from utils.arguments import eval_args
 from pathlib import Path
+from utils.helpers import torch_device
 
 # Only for one model at a time, with possible ensemble but different paths
 
 
 def eval(args):
     print("[eval]: starting")
-
-    if args.save_file_name == "":
-        raise Exception("Provide a save_file_name!")
-    if args.model_path_file == "":
-        raise Exception("Provide a model_name_file!")
-
     model_paths = open(ROOT + "/eval_path_files/" + args.model_path_file, "r")
-
-    # Set device
-    device = torch.device(
-        'cuda:0' if torch.cuda.is_available() else
-        'mps' if torch.backends.mps.is_available() else
-        'cpu'
-    )
-
-    if args.use_cpu:
-        device = torch.device('cpu')
+    device = torch_device()
     print(f"[device]: {device}")
 
-    # Set Path to Datasets
-    DATA_PATH = Path(LOCAL_STORAGE) / DATA_DIR
-    RESULT_PATH = Path(ROOT) / RESULT_DIR
+    data_path = Path(LOCAL_STORAGE) / DATA_DIR
+    result_path = Path(ROOT) / RESULT_DIR
 
-    os.makedirs(RESULT_PATH, exist_ok=True)
+    os.makedirs(result_path, exist_ok=True)
 
-    print(RESULT_PATH / args.save_file_name)
-    if os.path.isfile(RESULT_PATH / args.save_file_name):
-        f = open(RESULT_PATH / args.save_file_name, 'r')
+    if os.path.isfile(result_path / args.save_file_name):
+        f = open(result_path / args.save_file_name, 'r')
         results = json.load(f)
     else:
         results = {}
 
     print(f"[dataset]: loading {args.dataset}")
-    if args.dataset in ("CIFAR10", "CIFAR100", "MNIST", "ImageNet"):
+    if args.dataset in ("cifar10", "cifar100", "mnist", "imagenet"):
         nlp, dm, num_classes, train_loader, val_loader, test_loader, shift_loader, ood_loader = load_vision_dataset(
             dataset=args.dataset,
+            args=args,
             model_type=args.model_type,
             ViT_model=args.ViT_model,
-            DATA_PATH=DATA_PATH,
+            data_path=data_path,
             batch_size=args.batch_size,
             num_workers=args.num_workers,
             val_split=args.val_split,
@@ -116,14 +101,13 @@ def eval(args):
             if 'Train nll' not in results[model_name].keys():
                 train_done = False
             if ood_done and in_done and shift_done and train_done:
-                print("SKIPPING")
-                print(model_name)
+                print(f"[eval]: skipping {model_name}, already done")
                 num_models += 1
                 continue
 
         feature_reduction, model = load_model(name=args.model_type, vit=args.ViT_model, nlp=args.NLP_model,
                                               path=model_path, device=device, num_classes=num_classes)
-        print(args.model_type, model_path)
+        print(f"[eval]: loaded {model_name}")
         print("[eval]: starting")
         model = model.to(device)
         model.eval()
@@ -223,8 +207,7 @@ def eval(args):
             results[model_name]['OOD FPR95'] = fpr_at_95_tpr_calc
             results[model_name]['OOD Accuracy'] = ood_acc.to("cpu").numpy().tolist()
 
-        with open(RESULT_PATH/args.save_file_name, 'w') as fp:
-            print(RESULT_PATH/args.save_file_name)
+        with open(result_path/args.save_file_name, 'w') as fp:
             json.dump(results, fp, indent=4)
 
         num_models += 1
@@ -237,7 +220,7 @@ def eval(args):
     # --------------------------------------------------------------------
     if num_models > 1:
         output_file = args.save_file_name.replace('.', '_summary.')
-        model_results = open(RESULT_PATH/args.save_file_name, 'r')
+        model_results = open(result_path/args.save_file_name, 'r')
 
         metrics_data = {}
         for line_data in model_results.read().splitlines():
@@ -265,16 +248,16 @@ def eval(args):
                 "SE": np.std(values)/np.sqrt(num_models)
             }
 
-        with open(RESULT_PATH/output_file, 'w') as output:
+        with open(result_path/output_file, 'w') as output:
             json.dump(metrics_summary, output, indent=4)
 
-        print("Metrics summary saved to ", {RESULT_PATH/output_file})
+        print("Metrics summary saved to ", {result_path/output_file})
 
         # --------------------------------------------------------------------
         # Plot Reliability Diagram
         # --------------------------------------------------------------------
         if args.rel_plot:
-            PLOT_PATH = RESULT_PATH / "/rel_diag_probs/"
+            PLOT_PATH = result_path / "/rel_diag_probs/"
             os.makedirs(PLOT_PATH, exist_ok=True)
             print(len(model_results_id))
             print(len(model_results_shift))
@@ -298,9 +281,18 @@ def encode_mnli(batch, tokenizer):
 
 def main():
     args = eval_args()
+
+    result_path = Path(ROOT) / RESULT_DIR
+    save_file = args.save_file_name.split(".")[0]
+    results_dir = [results.name.split("_savefile")[0] for results in result_path.iterdir()]
+    results_dir = [res.split(".")[0] for res in results_dir]
+    if save_file in results_dir and not args.redo:
+        print(f"[main]: {args.save_file_name} already exists, skipping...")
+        return
+
     eval(args)
 
 
 if __name__ == "__main__":
     main()
-    print("All models evaluated!")
+    print("[main]: all models evaluated")

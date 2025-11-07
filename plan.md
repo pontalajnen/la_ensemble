@@ -2,7 +2,6 @@
 
 ## TODO
 
-- [x] SAM with ResNet18 on Cifar10
 - [x] Ensemble x 5 (naive)
 - [x] Laplace
 - [ ] Packed Ensembles (AdamW and SAM)
@@ -38,13 +37,6 @@ prior precision optimization (laplace uncertainty)
 - Transformers
 
 ## Models to Test
-
-- Normal
-  - Cifar100
-
-- SAM
-  - Cifar10
-  - Cifar100
 
 - Ensemble (normal)
   - Cifar10
