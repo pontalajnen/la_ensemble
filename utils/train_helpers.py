@@ -114,4 +114,3 @@ def init_optimizer(args, model):
         if args.lr_scheduler == "cosine":
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(opt, args.epochs)
     return opt, scheduler
-

@@ -78,30 +78,6 @@ ssh <username>@berzelius.nsc.liu.se   # Auto assignment
 - Ensemble x 5 (naive)
 - Read the paper
 
-## TODO
-
-- [x] SAM with ResNet18 on Cifar10
-- [x] Ensemble x 5 (naive)
-- [x] Laplace
-- [ ] Packed Ensembles (AdamW and SAM)
-- [ ] Packed Ensembles + Laplace
-- [ ] Cifar100
-- [ ] BatchEnsembles
-- [ ] Transformers (ViT-x)
-- [ ] Laplace on Batch
-
-interactive -C "fat"
-
-resnet18 på cifar10 och 100 (laplace)
-sam (laplace)
-ensemble (subset i laplace biblioteket)
-packed ensemble
-
-## Questions For Erik
-
-- Omstrukturera/tips på testning. Blir många filer och mycket att hålla koll på
-- Körtider för full hessian laplace
-
 ## Berzelius Documentation
 
 **Documentation and getting help:**

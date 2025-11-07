@@ -16,7 +16,6 @@ import timm
 from transformers import AutoModelForSequenceClassification  # , AutoTokenizer,  DataCollatorWithPadding
 from transformers import get_scheduler
 # from datasets import load_dataset
-from helpers import common_arguments
 import numpy as np
 
 
@@ -415,11 +414,11 @@ def main():
     parser.add_argument("--eta", default=0.1, type=float,
                         help="Eta parameter for ASAM.")
 
-    parser = common_arguments(parser)
+    # parser = common_arguments(parser)
 
-    args = parser.parse_args()
+    # args = parser.parse_args()
 
-    train(args)
+    # train(args)
 
 
 if __name__ == "__main__":

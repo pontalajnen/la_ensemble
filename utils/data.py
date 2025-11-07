@@ -165,7 +165,7 @@ def load_vision_dataset(dataset, model_type, ViT_model, DATA_PATH, batch_size, n
             model_name = ViT_model
             processor = ViTImageProcessor.from_pretrained(model_name)
             image_mean, image_std = processor.image_mean, processor.image_std
-            size = processor.size["height"]
+            # size = processor.size["height"]
             normalize = v2.Normalize(mean=image_mean, std=image_std)
         else:
             if dataset == "CIFAR10":
