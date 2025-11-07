@@ -16,12 +16,12 @@ mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
 python3 evaluate.py \
     --save_file_name resnet18_cifar10_sgd_la.json \
-    --model_path_file resnet18_cifar10_sgd_la.txt \
-    --model_type ResNet18 \
-    --dataset CIFAR10 \
+    --model_path_file resnet18_cifar10_sgd.txt \
+    --model_type resnet18 \
+    --dataset cifar10 \
     --batch_size 4 \
     --laplace \
-    --hessian_approx full \
+    --hessian_approx kron \
 
     # --shift_severity 3 \
     # --num_data 100 \
