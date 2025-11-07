@@ -15,11 +15,9 @@ mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
 
 python3 evaluate.py \
-    --save_file_name resnet18_cifar10_sgd_la.json \
-    --model_path_file resnet18_cifar10_sgd_la.txt \
+    --save_file_name resnet18_cifar100_sgd.json \
+    --model_path_file resnet18_cifar10_sgd.txt \
     --model_type ResNet18 \
-    --dataset CIFAR100 \
-    --batch_size 32 \
+    --dataset CIFAR10 \
+    --batch_size 128 \
     --laplace \
-    --hessian_approx kron \
-    --subset_of_weights last_layer
