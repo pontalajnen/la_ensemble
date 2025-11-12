@@ -35,7 +35,10 @@ BACKENDS = {
 }
 
 
-def load_model(name, vit, nlp, path, device, num_classes):
+def load_model(args, path, device, num_classes):
+    name = args.model_type
+    vit = args.ViT_model
+    nlp = args.NLP_model
     print(f"[num_classes]: {num_classes}")
     print(f"[model]: loading {name}")
     # Load the model from the specified path
@@ -147,7 +150,7 @@ def eval_train_data(model, dataloader, device, laplace, link, mc_samples, pred_t
     return nll.item()
 
 
-def eval_data(model, dataloader, device, num_classes, laplace=False, link=None, nll=False,
+def eval_data(results, model, dataloader, device, num_classes, laplace=False, link=None, nll=False,
               mc_samples=10, pred_type="glm", cifar10H=False, model_name=None, num_models=0, rel_plot=None):
     # This function is called by both shift and ID evaluation
     accuracy = Accuracy(task="multiclass", num_classes=num_classes).to(device)

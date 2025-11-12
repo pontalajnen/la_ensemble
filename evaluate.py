@@ -44,17 +44,7 @@ def eval(args):
     if args.dataset in ("cifar10", "cifar100", "mnist", "imagenet"):
         nlp, dm, num_classes, train_loader, val_loader, test_loader, shift_loader, ood_loader = load_vision_dataset(
             args=args,
-            data_path=data_path,
-            batch_size=args.batch_size,
-            num_workers=args.num_workers,
-            val_split=args.val_split,
-            test_alt=args.test_alt,
-            eval_ood=args.eval_ood,
-            eval_shift=args.eval_shift,
-            shift_severity=args.shift_severity,
-            basic_augment=args.basic_augment,
-            ood_ds=args.ood_ds,
-            normalize_pretrained_dataset=args.normalize_pretrained_dataset
+            data_path=data_path
         )
     elif args.dataset in ("MNLI", "RTE", "MRPC"):
         nlp, train_loader, val_loader, test_loader, shift_loader, ood_loader, num_classes = load_hf_dataset(
@@ -79,16 +69,12 @@ def eval(args):
         model_name = model_path.split("model_name=")[1].replace(".ckpt", "")
 
         if model_name not in results.keys():
-            ood_done = False
-            in_done = False
-            shift_done = False
-            train_done = False
+            ood_done = in_done = False
+            shift_done = train_done = False
             results[model_name] = {}
         else:
-            ood_done = True
-            in_done = True
-            shift_done = True
-            train_done = True
+            ood_done = in_done = True
+            shift_done = train_done = True
             if 'clean_accuracy' not in results[model_name].keys():
                 in_done = False
             if 'SHIFT ECE' not in results[model_name].keys():
@@ -102,8 +88,7 @@ def eval(args):
                 num_models += 1
                 continue
 
-        feature_reduction, model = load_model(name=args.model_type, vit=args.ViT_model, nlp=args.NLP_model,
-                                              path=model_path, device=device, num_classes=num_classes)
+        feature_reduction, model = load_model(args, path=model_path, device=device, num_classes=num_classes)
         print(f"[eval]: loaded {model_name}")
         print("[eval]: starting")
         model = model.to(device)

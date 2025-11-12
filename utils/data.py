@@ -13,8 +13,17 @@ import numpy as np
 from functools import partial
 
 
-def load_data_module(dataset, args, root, batch_size, eval_ood=False, eval_shift=False, shift_severity=1,
-                     num_workers=1, val_split=0.0, test_alt=None, ood_ds="openimage-o", basic_augment=True):
+def load_data_module(args, root):
+    dataset = args.dataset
+    batch_size = args.batch_size
+    num_workers = args.num_workers
+    val_split = args.val_split
+    test_alt = args.test_alt
+    eval_ood = args.eval_ood
+    eval_shift = args.eval_shift
+    shift_severity = args.shift_severity
+    basic_augment = args.basic_augment
+    ood_ds = args.ood_ds
     if dataset == "cifar10":
         num_classes = 10
         dm = CIFAR10DataModule(root=root, batch_size=batch_size, num_workers=num_workers, val_split=val_split,
@@ -154,18 +163,16 @@ def encode_mnli(batch, tokenizer):
     return tokenizer(batch["premise"], batch["hypothesis"], truncation=True, padding="max_length", max_length=256)
 
 
-def load_vision_dataset(args, data_path, batch_size, num_workers, val_split, test_alt,
-                        eval_ood, eval_shift, shift_severity, basic_augment, ood_ds, normalize_pretrained_dataset):
+def load_vision_dataset(args, data_path):
     dataset = args.dataset
-    model_type = args.model_type
-    ViT_model = args.ViT_model
-    dm, num_classes = load_data_module(dataset, args, data_path, batch_size=batch_size, num_workers=num_workers,
-                                       val_split=val_split, test_alt=test_alt, eval_ood=eval_ood, eval_shift=eval_shift,
-                                       shift_severity=shift_severity, basic_augment=basic_augment, ood_ds=ood_ds)
-    if model_type == "ViT":
+    eval_ood = args.eval_ood
+    eval_shift = args.eval_shift
+    normalize_pretrained_dataset = args.normalize_pretrained_dataset
+    dm, num_classes = load_data_module(args, data_path)
+    if args.model_type == "ViT":
 
         if normalize_pretrained_dataset:
-            model_name = ViT_model
+            model_name = args.ViT_model
             processor = ViTImageProcessor.from_pretrained(model_name)
             image_mean, image_std = processor.image_mean, processor.image_std
             # size = processor.size["height"]
