@@ -154,9 +154,12 @@ def encode_mnli(batch, tokenizer):
     return tokenizer(batch["premise"], batch["hypothesis"], truncation=True, padding="max_length", max_length=256)
 
 
-def load_vision_dataset(dataset, args, model_type, ViT_model, data_path, batch_size, num_workers, val_split, test_alt,
+def load_vision_dataset(args, data_path, batch_size, num_workers, val_split, test_alt,
                         eval_ood, eval_shift, shift_severity, basic_augment, ood_ds, normalize_pretrained_dataset):
-    dm, num_classes = load_data_module(dataset, data_path, batch_size=batch_size, num_workers=num_workers,
+    dataset = args.dataset
+    model_type = args.model_type
+    ViT_model = args.ViT_model
+    dm, num_classes = load_data_module(dataset, args, data_path, batch_size=batch_size, num_workers=num_workers,
                                        val_split=val_split, test_alt=test_alt, eval_ood=eval_ood, eval_shift=eval_shift,
                                        shift_severity=shift_severity, basic_augment=basic_augment, ood_ds=ood_ds)
     if model_type == "ViT":

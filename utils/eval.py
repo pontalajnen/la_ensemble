@@ -1,14 +1,16 @@
 # Code based on https://github.com/JohannaDK/DD2412-Final-Project/blob/main/src/utils/eval_utils.py
 import torch
 import torch.nn as nn
-from models.resnet import torch_resnet56, ResNet18
-# from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score, roc_curve
+from models.resnet import torch_resnet56, ResNet18, torch_resnet18
+from models.ensemble_model import EnsembleModel
 from sklearn import metrics
-# from torch.utils.data import DataLoader
 from torchmetrics.classification import Accuracy, F1Score  # , MulticlassCalibrationError
-from torch_uncertainty.metrics.classification import CalibrationError, AdaptiveCalibrationError, AURC, FPR95  # , BrierScore  # noqa
-# from ood_metrics import fpr_at_95_tpr
-# import torchvision.transforms as transforms
+from torch_uncertainty.metrics.classification import (
+    CalibrationError,
+    AdaptiveCalibrationError,
+    AURC, FPR95,
+    # BrierScore
+)
 import torch.distributions as dists
 import numpy as np
 import os
@@ -40,6 +42,8 @@ def load_model(name, vit, nlp, path, device, num_classes):
     feature_reduction = None
     if name == 'resnet18':
         model = ResNet18(num_classes=num_classes)
+    elif name == 'resnet18_ensemble':
+        model = EnsembleModel(model=torch_resnet18, num_models=5, num_classes=num_classes)
     elif name == 'resnet56':
         model = torch_resnet56(num_classes=num_classes)
     elif name == "vit":

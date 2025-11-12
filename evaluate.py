@@ -43,10 +43,7 @@ def eval(args):
     print(f"[dataset]: loading {args.dataset}")
     if args.dataset in ("cifar10", "cifar100", "mnist", "imagenet"):
         nlp, dm, num_classes, train_loader, val_loader, test_loader, shift_loader, ood_loader = load_vision_dataset(
-            dataset=args.dataset,
             args=args,
-            model_type=args.model_type,
-            ViT_model=args.ViT_model,
             data_path=data_path,
             batch_size=args.batch_size,
             num_workers=args.num_workers,

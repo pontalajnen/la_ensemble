@@ -18,9 +18,9 @@ def init_model(args, device, num_classes):
             models = ResNet18_packed(num_classes)
         elif args.ensemble:
             models = EnsembleModel(
+                model=torch_resnet18,
                 num_models=args.num_ensemble_models,
-                num_classes=num_classes,
-                model=torch_resnet18
+                num_classes=num_classes
             )
         else:
             models = ResNet18(num_classes)

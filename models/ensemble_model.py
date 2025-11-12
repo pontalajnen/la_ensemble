@@ -1,11 +1,11 @@
 import torch.nn as nn
 import random
 import torch
-from .resnet import torch_resnet18
+from .resnet import ResNet18
 
 
 class EnsembleModel(nn.Module):
-    def __init__(self, num_models=5, num_classes=10, model=torch_resnet18):
+    def __init__(self, model=ResNet18, num_models=5, num_classes=10):
         super().__init__()
         seeds = [x for x in range(num_models)]
 
