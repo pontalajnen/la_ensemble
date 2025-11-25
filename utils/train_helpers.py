@@ -9,6 +9,7 @@ from transformers import ViTImageProcessor  # , ViTForImageClassification
 from torchvision.transforms import v2
 # from sam import SAM
 from utils.sam import SAM
+from models.resnet20_frn import ResNet20_FRN
 
 
 def init_model(args, device, num_classes):
@@ -24,6 +25,24 @@ def init_model(args, device, num_classes):
             )
         else:
             models = ResNet18(num_classes)
+
+        print("[model] loaded")
+        models = models.to(device)
+
+    if args.model == "resnet20":
+        if args.packed:
+            print("[model] Using ResNet20 packed")
+            raise NotImplementedError("ResNet20 packed not implemented yet")
+            models = ResNet18_packed(num_classes)
+        elif args.ensemble:
+            raise NotImplementedError("ResNet20 ensemble not implemented yet")
+            models = EnsembleModel(
+                model=torch_resnet18,
+                num_models=args.num_ensemble_models,
+                num_classes=num_classes
+            )
+        else:
+            models = ResNet20_FRN(num_classes)
 
         print("[model] loaded")
         models = models.to(device)

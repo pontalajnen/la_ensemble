@@ -41,7 +41,7 @@ class FRN(nn.Module):
     def reset_parameters(self):
         nn.init.ones_(self.weight)
         nn.init.zeros_(self.bias)
-        if self.is_eps_leanable:
+        if self.is_eps_learnable:
             nn.init.constant_(self.eps, self.init_eps)
 
     def extra_repr(self):

@@ -16,8 +16,12 @@ from utils.helpers import torch_device
 from pathlib import Path
 
 
-def save_models(args, best_path, final_path):
-    pass
+def model_path(args, save_dir, epoch, val_loss, model_name):
+    return os.path.join(
+        save_dir,
+        (f"model={args.model}-epoch={epoch:02d}-val_loss={val_loss:.4f}-"
+         f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
+    )
 
 
 def train(args):
@@ -46,11 +50,8 @@ def train(args):
     dm.setup("fit")
 
     if args.distributed:
-        temp_train_loader = dm.train_dataloader()
-        temp_val_loader = dm.val_dataloader()
-
-        train_dataset = temp_train_loader.dataset
-        val_dataset = temp_val_loader.dataset
+        train_dataset = dm.train_dataloader().dataset
+        val_dataset = dm.val_dataloader().dataset
 
         train_sampler = DistributedSampler(train_dataset, shuffle=True)
         val_sampler = DistributedSampler(val_dataset, shuffle=False)
@@ -175,19 +176,11 @@ def train(args):
         scheduler.step()
 
     print("[training loop]: finished")
-    # Rename the best checkpoint with metadata
-    final_checkpoint_path = os.path.join(
-        save_dir,
-        (f"model={args.model}-epoch={best_epoch:02d}-val_loss={best_val_loss:.4f}-"
-         f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
-    )
-    os.rename(best_checkpoint_path, final_checkpoint_path)
 
-    last_epoch_checkpoint_path = os.path.join(
-        save_dir,
-        (f"model={args.model}-epoch={args.epochs}-val_loss={val_loss:.4f}-"
-         f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
-    )
+    # Rename the best checkpoint with metadata
+    final_checkpoint_path = model_path(args, save_dir, best_epoch, best_val_loss, model_name)
+    os.rename(best_checkpoint_path, final_checkpoint_path)
+    last_epoch_checkpoint_path = model_path(args, save_dir, args.epochs, val_loss, model_name)
 
     state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     torch.save(state, last_epoch_checkpoint_path)
