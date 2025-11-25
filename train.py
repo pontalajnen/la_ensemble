@@ -16,6 +16,10 @@ from utils.helpers import torch_device
 from pathlib import Path
 
 
+def save_models(args, best_path, final_path):
+    pass
+
+
 def train(args):
     if args.distributed:
         args.local_rank = int(os.environ['LOCAL_RANK'])
@@ -33,15 +37,7 @@ def train(args):
 
     DATA_PATH = LOCAL_STORAGE + DATA_DIR
 
-    dm, num_classes = load_data_module(
-        args.dataset,
-        args,
-        DATA_PATH,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        val_split=args.val_split,
-        basic_augment=args.basic_augment
-    )
+    dm, num_classes = load_data_module(args, DATA_PATH)
 
     if args.model == "vit":
         dm = init_transformer(args, dm)
@@ -86,6 +82,7 @@ def train(args):
     seed = args.seed
     model_name = args.model + "_" + args.dataset + "_" + args.base_optimizer
     model_name += "_ensemble" if args.ensemble else ""
+    model_name += "_packed" if args.packed else ""
     torch_seed = torch.Generator()
     torch_seed.manual_seed(seed)
     torch.manual_seed(seed)
@@ -205,8 +202,7 @@ def main():
 
     save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
     if Path(save_dir).exists() and any(Path(save_dir).iterdir()):  # TODO: Make more robust
-        print(f"[main]: model already trained at {save_dir}, skipping...")
-        return
+        print(f"[warning]: model already trained at {save_dir}, skipping...")
 
     train(args)
 

@@ -20,15 +20,19 @@ packed ensemble
 
 prior precision optimization (laplace uncertainty)
 
+- Cifar10 packed (resnet20)
+- cifar10 packed la
+- imagenet transformers
+- imagenet transformers la
+- imagenet transformers packed (la)
+- compare with FRA with tensorflow representation
+
 ## Models to Train
 
 - Ensemble (normal)
-  - Cifar10
   - Cifar100
 
 - Ensemble (packed)
-  - Cifar10
-  - Cifar100
 
 - Ensemble (batched)
   - Cifar10
@@ -51,8 +55,3 @@ prior precision optimization (laplace uncertainty)
   - Cifar100
 
 - Transformers
-
-## Questions For Erik
-
-- Omstrukturera/tips på testning. Blir många filer och mycket att hålla koll på
-- Körtider för full hessian laplace

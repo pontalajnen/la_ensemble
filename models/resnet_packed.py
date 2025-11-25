@@ -7,6 +7,52 @@ from einops import rearrange
 from torch_uncertainty.layers import PackedConv2d, PackedLinear
 
 
+class FilterResponseNorm2d(nn.Module):
+    def __init__(self, num_features, eps=1e-6):
+        super().__init__()
+        self.eps = nn.Parameter(torch.tensor(eps))
+        self.tau = nn.Parameter(torch.zeros(1, num_features, 1, 1))
+        self.beta = nn.Parameter(torch.zeros(1, num_features, 1, 1))
+        self.gamma = nn.Parameter(torch.ones(1, num_features, 1, 1))
+
+    def forward(self, x):
+        nu2 = torch.mean(torch.square(x), dim=[2, 3], keepdim=True)
+        x = x * torch.rsqrt(nu2 + torch.abs(self.eps))
+
+        return torch.maximum(self.gamma * x + self.beta, self.tau)
+
+
+class PackedFilterResponseNorm2d(nn.Module):
+    def __init__(self, num_features, num_estimators=4, alpha=2, gamma=1):
+        super().__init__()
+        # TODO: Incorporate gamma
+        assert num_features % num_estimators == 0, "num_features not divisible by num_estimators"
+        self.num_features = int(num_features / num_estimators) * alpha
+        self.num_estimators = num_estimators
+        self.alpha = alpha
+        self.gamma = gamma
+
+        self.filter_response_norms = nn.ModuleList([
+            FilterResponseNorm2d(self.num_features)
+            for _ in range(num_estimators)
+        ])
+
+    def forward(self, x):
+        batch_size, channels, height, width = x.shape
+
+        x = x.view(batch_size, self.num_estimators, self.num_features, height, width)
+
+        outputs = []
+        for i in range(self.num_estimators):
+            out = self.filter_response_norms[i](x[:, i])
+            outputs.append(out)
+
+        output = torch.stack(outputs, dim=1)
+        output = output.view(batch_size, channels, height, width)
+
+        return output
+
+
 class PackedBatchNorm2d(nn.Module):
     def __init__(self, num_features, num_estimators=4, alpha=2, gamma=1):
         super().__init__()
@@ -142,8 +188,12 @@ class ResNet_packed(nn.Module):
 
 
 # ImageNet models
-def ResNet18_packed(num_estimators=4, alpha=2, gamma=1):
-    return ResNet_packed(BasicBlock_packed, [2, 2, 2, 2])
+def ResNet18_packed(num_classes, num_estimators=4, alpha=2, gamma=1):
+    return ResNet_packed(BasicBlock_packed, [2, 2, 2, 2], num_classes=num_classes)
+
+
+def ResNet20_packed():
+    return ResNet_packed(BasicBlock_packed)
 
 
 def ResNet34_packed():

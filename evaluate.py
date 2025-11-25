@@ -103,7 +103,7 @@ def eval(args):
             backend = BACKENDS[args.backend]
 
             pred_type = args.pred_type
-            if args.hessian_approx == "gp":
+            if args.hessian_approx == "gp":  # TODO: Sample for every model
                 model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
                                 subset_of_weights=args.subset_of_weights, independent_outputs=True,
                                 n_subset=args.num_data, backend=backend)
