@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from models.resnet import torch_resnet56, ResNet18, torch_resnet18
 from models.ensemble_model import EnsembleModel
+from models.resnet20_frn import ResNet20_FRN
 from sklearn import metrics
 from torchmetrics.classification import Accuracy, F1Score  # , MulticlassCalibrationError
 from torch_uncertainty.metrics.classification import (
@@ -45,6 +46,8 @@ def load_model(args, path, device, num_classes):
     feature_reduction = None
     if name == 'resnet18':
         model = ResNet18(num_classes=num_classes)
+    elif name == 'resnet20':
+        model = ResNet20_FRN(num_classes=num_classes)
     elif name == 'resnet18_ensemble':
         model = EnsembleModel(model=torch_resnet18, num_models=5, num_classes=num_classes)
     elif name == 'resnet56':
@@ -59,12 +62,13 @@ def load_model(args, path, device, num_classes):
         model = HF(device=device, model=nlp, num_labels=num_classes)
         feature_reduction = "pick_first"
     else:
-        raise Exception("Oops, requested model is not supported!")
+        raise Exception("[exception]: requested model not supported")
     if name == "roberta":
         model.model.load_state_dict(torch.load(path, map_location=device, weight_only=True))
     else:
         model.load_state_dict(torch.load(path, map_location=device, weights_only=True))
     model.to(device)
+    print(f"[model]: using {name}")
     return feature_reduction, model
 
 

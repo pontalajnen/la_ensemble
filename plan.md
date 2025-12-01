@@ -20,8 +20,8 @@ packed ensemble
 
 prior precision optimization (laplace uncertainty)
 
-- Cifar10 packed (resnet20)
-- cifar10 packed la
+- Cifar packed (resnet20)
+- cifar packed la
 - imagenet transformers
 - imagenet transformers la
 - imagenet transformers packed (la)
@@ -29,10 +29,17 @@ prior precision optimization (laplace uncertainty)
 
 ## Models to Train
 
+- SAM
+  - Cifar10
+  - Cifar100
+
 - Ensemble (normal)
+  - Cifar10
   - Cifar100
 
 - Ensemble (packed)
+  - Cifar10
+  - Cifar100
 
 - Ensemble (batched)
   - Cifar10
@@ -42,6 +49,14 @@ prior precision optimization (laplace uncertainty)
 
 ## Models to Test
 
+- Normal
+  - Cifar10
+  - Cifar100
+
+- SAM
+  - Cifar10
+  - Cifar100
+
 - Ensemble (normal)
   - Cifar10
   - Cifar100
@@ -55,3 +70,7 @@ prior precision optimization (laplace uncertainty)
   - Cifar100
 
 - Transformers
+
+Frågor:
+
+- Mer minne för större dataset?
