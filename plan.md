@@ -74,3 +74,51 @@ prior precision optimization (laplace uncertainty)
 Frågor:
 
 - Mer minne för större dataset?
+
+| Option                         | Pros                           | Cons
+
+| hessian_structure="diag"       | Works with any layer           | Less accurate than KFAC
+
+```python
+model = Laplace(
+    model,
+    likelihood="classification",
+    subset_of_weights="last_layer",  # or "all"
+    hessian_structure="diag",        # instead of "kron"
+    backend=BACKENDS[args.la_backend],
+)
+model.fit(train_loader, progress_bar=True)
+```
+
+| subset_of_weights="last_layer" | Fast, robust, often sufficient | Only calibrates last layer
+
+```python
+model = Laplace(
+    model,
+    likelihood="classification",
+    subset_of_weights="last_layer",  # only the final nn.Linear
+    hessian_structure="kron",        # kron works for Linear
+    backend=BACKENDS[args.la_backend],
+)
+model.fit(train_loader, progress_bar=True)
+```
+
+| Freeze FRN/TLU params          | Keeps KFAC for Conv/Linear     | Ignores uncertainty in FRN/TLU
+
+```python
+for name, module in model.named_modules():
+    if isinstance(module, (FRN, TLU)):
+        for param in module.parameters():
+            param.requires_grad = False
+
+model = Laplace(
+    model,
+    likelihood="classification",
+    subset_of_weights="all",
+    hessian_structure="kron",
+    backend=BACKENDS[args.la_backend],
+)
+model.fit(train_loader, progress_bar=True)
+```
+
+| Replace FRN → BatchNorm        | Full KFAC support              | Requires retraining

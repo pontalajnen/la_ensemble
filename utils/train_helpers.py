@@ -106,9 +106,9 @@ def init_optimizer(args, model):
 
     # Determine the base optimizer and SAM optimizer setup
     if args.SAM:
-        print("----- Using SAM optimizer -----")
+        print("[optimizer] using SAM") 
         if args.adaptive:
-            print("----- Using Adaptive SAM optimizer -----")
+            print("[optimizer] using adaptive SAM")
         # Set up arguments for both SAM and the base optimizer
         optimizer_args = {
             'params': model.parameters(),

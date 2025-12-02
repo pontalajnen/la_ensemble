@@ -3,7 +3,7 @@ from argparse import ArgumentParser, BooleanOptionalAction
 
 def common_args():
     parser = ArgumentParser()
-    parser.add_argument("--val_split", type=int, default=0.0)
+    parser.add_argument("--val_split", type=float, default=0.0)
     parser.add_argument("--num_workers", type=int, default=2)
     return parser
 
