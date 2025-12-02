@@ -17,8 +17,6 @@ def eval_args():
                         help="Path to checkpoint for fine-tuning")
     parser.add_argument("--ViT_model", type=str, default='vit_base_patch16_224.orig_in21k',
                         help="Path to checkpoint for fine-tuning")
-    parser.add_argument("--use_cpu", action=BooleanOptionalAction, default=False,
-                        help="Whether to use CPU for evaluation.")
 
     # --------------------------------------------
 
@@ -85,8 +83,6 @@ def train_args():
     parser.add_argument("--basic_augment", action=BooleanOptionalAction, default=True)
     parser.add_argument("--model", type=str, default="ResNet18")
     parser.add_argument("--depth", default=18, type=int)
-    parser.add_argument("--width_factor", default=8, type=int,
-                        help="How many times wider compared to normal ResNet.")
     parser.add_argument("--model_name", type=str, default="Unknown")
     parser.add_argument("--ViT_model", type=str, default='google/vit-base-patch16-224-in21k',
                         help="Path to checkpoint for fine-tuning")
@@ -129,13 +125,12 @@ def train_args():
     parser.add_argument("--label_smoothing", default=0.1, type=float,
                         help="Use 0.0 for no label smoothing.")
     parser.add_argument("--distributed", action="store_true", help="Use distributed data parallel")
-    parser.add_argument("--local_rank", "--local-rank", default=0, type=int, help="Local rank for distributed training")
+    parser.add_argument("--local_rank", "--local-rank", default=0, type=int)
     parser.add_argument("--packed", action=BooleanOptionalAction, default=False)
 
     # Ensemble arguments
     parser.add_argument("--ensemble", action=BooleanOptionalAction, default=False)
-    parser.add_argument("--num_ensemble_models", type=int, default=5)
-
+    parser.add_argument("--num_ensemble_models", type=int, default=4)
 
     args = parser.parse_args()
     return args

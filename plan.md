@@ -29,10 +29,6 @@ prior precision optimization (laplace uncertainty)
 
 ## Models to Train
 
-- SAM
-  - Cifar10
-  - Cifar100
-
 - Ensemble (normal)
   - Cifar10
   - Cifar100

@@ -4,9 +4,9 @@ torchrun \
     train.py \
     --distributed \
     --model resnet20 \
-    --dataset cifar100 \
+    --dataset cifar10 \
     --val_split 0.1 \
-    --SAM \
+    --ensemble \
     --epochs 5 \
     "$@"
 

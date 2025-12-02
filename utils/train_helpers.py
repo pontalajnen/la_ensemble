@@ -31,27 +31,26 @@ def init_model(args, device, num_classes):
 
     if args.model == "resnet20":
         if args.packed:
-            print("[model] Using ResNet20 packed")
-            raise NotImplementedError("ResNet20 packed not implemented yet")
+            print("[model]: resnet20 packed")
+            raise NotImplementedError("[exception]: resnet20 packed not implemented yet")
             models = ResNet18_packed(num_classes)
         elif args.ensemble:
-            raise NotImplementedError("ResNet20 ensemble not implemented yet")
+            print("[model]: resnet20 ensemble")
             models = EnsembleModel(
-                model=torch_resnet18,
+                model=ResNet20_FRN,
                 num_models=args.num_ensemble_models,
                 num_classes=num_classes
             )
         else:
             models = ResNet20_FRN(num_classes)
 
-        print("[model] loaded")
         models = models.to(device)
 
     elif args.model == "vit":
         models = timm.create_model('vit_base_patch16_224.orig_in21k', pretrained=True, num_classes=num_classes)
         models = models.to(device)
     else:
-        raise Exception("Requested model does not exist! Has to be one of 'resNet18', 'vit'")
+        raise Exception("[exception]: requested model does not exist, one of 'resnet18', 'resnet20', 'vit'")
 
     if args.distributed:
         models = DDP(models, device_ids=[args.local_rank])
@@ -60,11 +59,9 @@ def init_model(args, device, num_classes):
 
 
 def init_transformer(args, data_module):
-    # Resize the images so that it is compatible with a ViT pretrained on ImageNet-21k
     model_name = 'google/vit-base-patch16-224-in21k'
     processor = ViTImageProcessor.from_pretrained(model_name)
     image_mean, image_std = processor.image_mean, processor.image_std
-    # size = processor.size["height"]
     if args.normalize_pretrained_dataset:
         normalize = v2.Normalize(mean=image_mean, std=image_std)
     else:
@@ -72,8 +69,6 @@ def init_transformer(args, data_module):
             normalize = v2.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.201])
         elif args.dataset == "CIFAR100":
             normalize = v2.Normalize(mean=[0.5071, 0.4867, 0.4408], std=[0.2675, 0.2565, 0.2761])
-
-    # resize_transform = v2.Resize((224, 224))
 
     data_module.train_transform = v2.Compose([
         v2.Resize(256),
@@ -106,9 +101,9 @@ def init_optimizer(args, model):
 
     # Determine the base optimizer and SAM optimizer setup
     if args.SAM:
-        print("[optimizer] using SAM") 
+        print("[optimizer]: using SAM")
         if args.adaptive:
-            print("[optimizer] using adaptive SAM")
+            print("[optimizer]: using adaptive SAM")
         # Set up arguments for both SAM and the base optimizer
         optimizer_args = {
             'params': model.parameters(),

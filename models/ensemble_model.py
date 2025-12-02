@@ -5,7 +5,7 @@ from .resnet import ResNet18
 
 
 class EnsembleModel(nn.Module):
-    def __init__(self, model=ResNet18, num_models=5, num_classes=10):
+    def __init__(self, model=ResNet18, num_models=4, num_classes=10):
         super().__init__()
         seeds = [x for x in range(num_models)]
 

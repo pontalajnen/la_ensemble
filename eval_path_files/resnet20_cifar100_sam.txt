@@ -1,0 +1,1 @@
+/proj/berzelius-aiics-real/users/x_ponhe/la_ensamble/experiment_results/cifar100_resnet20__SAM/model=resnet20-epoch=192-val_loss=1.3056-optimizer=SGD-rho=0.05-adaptive=False-model_name=resnet20_cifar100_SGD.pth

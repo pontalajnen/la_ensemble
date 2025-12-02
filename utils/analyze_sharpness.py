@@ -22,8 +22,6 @@ def main():
                         help="Path to checkpoint for fine-tuning")
     parser.add_argument("--ViT_model", type=str, default='vit_base_patch16_224.orig_in21k',
                         help="Path to checkpoint for fine-tuning")
-    parser.add_argument("--use_cpu", action=BooleanOptionalAction, default=False,
-                        help="Whether to use CPU for evaluation.")
 
     parser.add_argument("--dataset", type=str, default="",
                         help="The dataset to evaluate on (e.g. CIFAR10, ImageNet etc.).")
@@ -82,8 +80,6 @@ def main():
         'mps' if torch.backends.mps.is_available() else
         'cpu'
     )
-    if args.use_cpu:
-        device = torch.device('cpu')
     print("Using device: ", device)
 
     # Set Path to Datasets

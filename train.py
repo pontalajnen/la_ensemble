@@ -24,6 +24,36 @@ def model_path(args, save_dir, epoch, val_loss, model_name):
     )
 
 
+def save_model(model, path):
+    state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+    torch.save(state, path)
+
+
+def init_wandb(args, model_name):
+    project = f"LA_SAM_{args.dataset}_{args.model}_SAM{args.SAM}_adaptive{args.adaptive}"
+    # Initialize W&B run and log hyperparameters
+    run = wandb.init(project=project, name=model_name, config={
+        "base_optimizer": args.base_optimizer,
+        "rho": args.rho,
+        "adaptive": args.adaptive,
+        "lr": args.learning_rate,
+        "lr_scheduler": args.lr_scheduler,
+        "batch_size": args.batch_size,
+        "dropout": args.dropout,
+        "weight_decay": args.weight_decay,
+        "seed": args.seed,
+        "SAM": args.SAM,
+        "momentum": args.momentum,
+        "epochs": args.epochs,
+        "dataset": args.dataset,
+        "model": args.model
+    })
+
+    artifact = wandb.Artifact("model_checkpoints", type="model")
+
+    return run, artifact
+
+
 def train(args):
     if args.distributed:
         args.local_rank = int(os.environ['LOCAL_RANK'])
@@ -75,9 +105,7 @@ def train(args):
         train_loader = dm.train_dataloader()
         val_loader = dm.val_dataloader()
 
-    images, labels = next(iter(train_loader))
-
-    print("[dataset]: loaded")
+    print(f"[dataset]: {args.dataset}")
     wandb.login()
 
     seed = args.seed
@@ -90,30 +118,10 @@ def train(args):
     torch.cuda.manual_seed(seed)
     np.random.seed(seed)
 
-    project = f"LA_SAM_{args.dataset}_{args.model}_SAM{args.SAM}_adaptive{args.adaptive}"
-    # Initialize W&B run and log hyperparameters
-    run = wandb.init(project=project, name=model_name, config={
-        "base_optimizer": args.base_optimizer,
-        "rho": args.rho,
-        "adaptive": args.adaptive,
-        "lr": args.learning_rate,
-        "lr_scheduler": args.lr_scheduler,
-        "batch_size": args.batch_size,
-        "dropout": args.dropout,
-        "weight_decay": args.weight_decay,
-        "seed": seed,
-        "SAM": args.SAM,
-        "momentum": args.momentum,
-        "epochs": args.epochs,
-        "dataset": args.dataset,
-        "model": args.model
-    })
+    run, artifact = init_wandb(args, model_name)
 
-    # Prepare for saving model checkpoints locally and log them to W&B
     save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
     os.makedirs(save_dir, exist_ok=True)
-
-    artifact = wandb.Artifact("model_checkpoints", type="model")
 
     model = init_model(args, device, num_classes)
 
@@ -170,8 +178,7 @@ def train(args):
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_epoch = epoch
-            state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
-            torch.save(state, best_checkpoint_path)
+            save_model(model, best_checkpoint_path)
 
         scheduler.step()
 
@@ -182,8 +189,7 @@ def train(args):
     os.rename(best_checkpoint_path, final_checkpoint_path)
     last_epoch_checkpoint_path = model_path(args, save_dir, args.epochs, val_loss, model_name)
 
-    state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
-    torch.save(state, last_epoch_checkpoint_path)
+    save_model(model, last_epoch_checkpoint_path)
 
     artifact.add_file(final_checkpoint_path)
     wandb.log_artifact(artifact)

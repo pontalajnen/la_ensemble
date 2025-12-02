@@ -13,11 +13,9 @@ echo "Starting job ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
 module load Miniforge3/24.7.1-2-hpc1-bdist
 mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
-
 python3 evaluate.py \
-    --save_file_name resnet18_cifar100_sgd.json \
-    --model_path_file resnet18_cifar100_sgd.txt \
-    --model_type resnet18 \
-    --dataset cifar100 \
-    --batch_size 128 \
-    --laplace \
+    --save_file_name resnet20_cifar10_sam.json \
+    --model_path_file resnet20_cifar10_sam.txt \
+    --model_type resnet20 \
+    --dataset cifar10 \
+    --batch_size 128

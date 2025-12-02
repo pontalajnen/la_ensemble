@@ -14,10 +14,9 @@ from functools import partial
 
 
 def load_data_module(args, root):
-    dataset = args.dataset
     batch_size = args.batch_size
-    num_workers = args.num_workers if hasattr(args, "num_workers") else 1
-    val_split = args.val_split if hasattr(args, "val_split") else 0.0
+    num_workers = args.num_workers
+    val_split = args.val_split
     test_alt = args.test_alt if hasattr(args, "test_alt") else None
     eval_ood = args.eval_ood if hasattr(args, "eval_ood") else False
     eval_shift = args.eval_shift if hasattr(args, "eval_shift") else False
@@ -25,22 +24,22 @@ def load_data_module(args, root):
     basic_augment = args.basic_augment if hasattr(args, "basic_augment") else True
     ood_ds = args.ood_ds if hasattr(args, "ood_ds") else "openimage-o"
 
-    if dataset == "cifar10":
+    if args.dataset == "cifar10":
         num_classes = 10
         dm = CIFAR10DataModule(root=root, batch_size=batch_size, num_workers=num_workers, val_split=val_split,
                                test_alt=test_alt, eval_ood=eval_ood, eval_shift=eval_shift,
                                shift_severity=shift_severity, basic_augment=basic_augment)
-    elif dataset == "cifar100":
+    elif args.dataset == "cifar100":
         num_classes = 100
         dm = CIFAR100DataModule(root=root, batch_size=batch_size, num_workers=num_workers, val_split=val_split,
                                 eval_ood=eval_ood, eval_shift=eval_shift, shift_severity=shift_severity,
                                 basic_augment=basic_augment)
-    elif dataset == "imagenet":
+    elif args.dataset == "imagenet":
         num_classes = 1000
         dm = ImageNetDataModule(root=root, batch_size=batch_size, num_workers=num_workers, val_split=val_split,
                                 test_alt=test_alt, ood_ds=ood_ds, eval_ood=eval_ood, eval_shift=eval_shift,
                                 basic_augment=basic_augment)
-    elif dataset == "mnist":
+    elif args.dataset == "mnist":
         num_classes = 10
         if ood_ds == "openimage-o":
             ood_ds = "fashion"
