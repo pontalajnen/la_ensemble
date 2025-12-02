@@ -148,7 +148,7 @@ def eval(args):
             ece_calc, mce_calc, aece_calc, acc, nll_value, brier_score, f1, OOD_y_preds_logits, OOD_labels, y_pred_id, y_target_id = eval_data(  # noqa
                 model, test_loader, device=device, num_classes=num_classes, laplace=args.laplace,
                 link=args.approx_link, nll=True, mc_samples=args.mc_samples, pred_type=pred_type,
-                cifar10H=args.cifar10H, model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot)
+                model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot)
             results[model_name]['clean_accuracy'] = acc.to("cpu").numpy().tolist()
             results[model_name]['f1'] = f1.to("cpu").numpy().tolist()
             results[model_name]['ECE'] = ece_calc.to("cpu").numpy().tolist()*100

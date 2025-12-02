@@ -155,7 +155,7 @@ def eval_train_data(model, dataloader, device, laplace, link, mc_samples, pred_t
 
 
 def eval_data(model, dataloader, device, num_classes, laplace=False, link=None, nll=False,
-              mc_samples=10, pred_type="glm", cifar10H=False, model_name=None, num_models=0, rel_plot=None):
+              mc_samples=10, pred_type="glm", model_name=None, num_models=0, rel_plot=None):
     # This function is called by both shift and ID evaluation
     accuracy = Accuracy(task="multiclass", num_classes=num_classes).to(device)
     f1_score = F1Score(task="multiclass", num_classes=num_classes, average="macro").to(device)
@@ -216,17 +216,6 @@ def eval_data(model, dataloader, device, num_classes, laplace=False, link=None, 
         nll = -dists.Categorical(y_preds).log_prob(y_targets).mean().item()
     else:
         nll = None
-
-    # Store the probabilities for the CIFAR10-H analysis
-    if cifar10H:
-        probabilities = torch.cat(OOD_y_preds_logits, dim=0)
-        probabilities = np.array([t.cpu().numpy() for t in probabilities])
-
-        CIFAR10H_PATH = ROOT + MODEL_PATH + "cifar10H/probs/"
-        os.makedirs(CIFAR10H_PATH, exist_ok=True)
-
-        np.save(CIFAR10H_PATH+str(model_name[:-4])+"_"+str(num_models)+'.npy', probabilities)
-        print("Saving to ", CIFAR10H_PATH+str(model_name[:-4])+"_"+str(num_models)+'.npy')
 
     return ece, mce, aece, acc, nll, brier_score, f1, OOD_y_preds_logits, OOD_labels, y_preds, y_targets
 

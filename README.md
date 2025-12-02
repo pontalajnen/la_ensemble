@@ -52,11 +52,6 @@ There are currently three training scripts:
 - 📝 **Example bash scripts** for evaluation can be found in the `test_scripts/` directory.
 - If you run an evaluation of the same model and use the same `--save_file_name` the result will not be overwritten but evaluation will be skipped.
 - You can use the flags `--no-eval_train`, `--no-eval_shift`and `--no-eval_ood`if you don't want to or can't (e.g. no ood dataset available) evaluate them
-- To run **CIFAR-10H** experiments, use the `--cifar10h` flag when evaluating models on CIFAR-10.
-- Create a `.txt` file in the `cifar10H` folder that contains the paths to the `.npy` files
-- Run the `eval_cifar10h_per_image.py` script to evaluate model predictions on CIFAR-10H.
-
-> **Note**: This script calculates the image-wise mean over n=X models and does a t-test with n= 10000. `eval_cifar10h_OLD_average_over_images.py` calculates the mean over all images and the corresponding t-test has a sample size of n=X.
 
 ### 🔧 Reliability Diagrams
 
@@ -153,7 +148,6 @@ torchrun --nproc_per_node=2 train.py --distributed [other args]
 - eval_bert_mrpc_adamw_sam_la.sbatch
 - eval_bert_mrpc_adamw_sam.sbatch
 - eval_bert_mrpc_adamw.sbatch
-- eval_cifar10H.sbatch
 - eval_roberta_mnli_adamw_la.sbatch
 - eval_roberta_mnli_adamw_sam_adaptive_la.sbatch
 - eval_roberta_mnli_adamw_sam_adaptive.sbatch
@@ -191,4 +185,3 @@ torchrun --nproc_per_node=2 train.py --distributed [other args]
 - Test_Resnet18_Cifar10_SGD_SAM.sh
 - test_resnet18_cifar10_sgd.sbatch
 - Test_Resnet18_Cifar10_SGD.sh
-- test_vit_cifar10H.sbatch

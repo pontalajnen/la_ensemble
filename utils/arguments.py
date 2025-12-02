@@ -1,8 +1,15 @@
 from argparse import ArgumentParser, BooleanOptionalAction
 
 
-def eval_args():
+def common_args():
     parser = ArgumentParser()
+    parser.add_argument("--val_split", type=int, default=0.0)
+    parser.add_argument("--num_workers", type=int, default=2)
+    return parser
+
+
+def eval_args():
+    parser = common_args()
     parser.add_argument("--save_file_name", type=str, required=True)
     parser.add_argument("--model_path_file", type=str, required=True)
     parser.add_argument("--model_type", type=str, required=True)
@@ -19,8 +26,6 @@ def eval_args():
                         help="The dataset to evaluate on (e.g. CIFAR10, ImageNet etc.).")
     parser.add_argument("--basic_augment", action=BooleanOptionalAction, default=True,
                         help="True if you want to use basic augmentations (horizontal flip, random crop with padding).")
-    parser.add_argument("--val_split", type=int, default=0.0,
-                        help="Split the training set into train and validation set.")
     parser.add_argument("--eval_ood", action=BooleanOptionalAction, default=True,
                         help="Whether to evaluate on OOD data.")
     parser.add_argument("--eval_shift", action=BooleanOptionalAction, default=True,
@@ -59,12 +64,9 @@ def eval_args():
     parser.add_argument('--pred_type', default="glm", type=str,
                         help='Prediction type has to be one of "nn" or "glm".')
 
-    parser.add_argument('--cifar10H', action=BooleanOptionalAction, default=False, type=bool,
-                        help="Whether to evaluate models trained on CIFAR10 on CIFAR-10-H")
     parser.add_argument('--rel_plot', action=BooleanOptionalAction, default=False,
                         help="Whether to reliability diagrams (both shift and id)")
 
-    parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--redo", action=BooleanOptionalAction, default=False)
     parser.add_argument("--freeze_frn", action=BooleanOptionalAction, default=False)
 
@@ -73,7 +75,7 @@ def eval_args():
 
 
 def train_args():
-    parser = ArgumentParser()
+    parser = common_args()
     # SEED
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--seeds_per_job", type=int, default=1)
@@ -81,7 +83,6 @@ def train_args():
     # Model and Dataset
     parser.add_argument("--dataset", type=str, default="CIFAR10")
     parser.add_argument("--basic_augment", action=BooleanOptionalAction, default=True)
-    parser.add_argument("--val_split", type=float, default=0.0)
     parser.add_argument("--model", type=str, default="ResNet18")
     parser.add_argument("--depth", default=18, type=int)
     parser.add_argument("--width_factor", default=8, type=int,
@@ -135,8 +136,6 @@ def train_args():
     parser.add_argument("--ensemble", action=BooleanOptionalAction, default=False)
     parser.add_argument("--num_ensemble_models", type=int, default=5)
 
-    parser.add_argument("--num_workers", type=int, default=2,
-                        help="Number of workers for the dataloader.")
 
     args = parser.parse_args()
     return args
