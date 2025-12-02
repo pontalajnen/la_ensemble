@@ -6,8 +6,8 @@ torchrun \
     --model resnet20 \
     --dataset cifar10 \
     --val_split 0.1 \
-    --ensemble \
     --epochs 5 \
     "$@"
 
     # --packed \
+    # --ensemble \

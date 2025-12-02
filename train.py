@@ -13,7 +13,7 @@ from torch.utils.data.distributed import DistributedSampler
 from utils.train_helpers import init_model, init_transformer, init_optimizer
 from utils.arguments import train_args
 from utils.helpers import torch_device
-from pathlib import Path
+# from pathlib import Path
 
 
 def model_path(args, save_dir, epoch, val_loss, model_name):
@@ -199,9 +199,9 @@ def train(args):
 def main():
     args = train_args()
 
-    save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
-    if Path(save_dir).exists() and any(Path(save_dir).iterdir()):  # TODO: Make more robust
-        print(f"[warning]: model already trained at {save_dir}, skipping...")
+    # save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
+    # if Path(save_dir).exists() and any(Path(save_dir).iterdir()):  # TODO: Make more robust
+    #     print(f"[warning]: model already trained at {save_dir}, skipping...")
 
     train(args)
 
