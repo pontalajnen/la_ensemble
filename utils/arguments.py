@@ -45,9 +45,8 @@ def eval_args():
     parser.add_argument("--hessian_approx", default="full", type=str,
                         help="The Hessian approximation to use (e.g. full, diag, kron).")
     parser.add_argument("--subset_of_weights", default="last_layer", type=str,
-                        help="The subset of weights to use (e.g. last_layer, all).")
-    parser.add_argument("--plot", action=BooleanOptionalAction, default=False,
-                        help="Whether to plot reliability diagrams.")
+                        choices=["last_layer", "all", "subset_of_weights"])
+    parser.add_argument("--plot", action=BooleanOptionalAction, default=False)
     parser.add_argument('--optimize_prior_precision', default=None, choices=['marglik', 'nll'],
                         help='optimize prior precision according to specified method')
     parser.add_argument('--backend', default=None,
@@ -65,9 +64,9 @@ def eval_args():
     parser.add_argument('--rel_plot', action=BooleanOptionalAction, default=False,
                         help="Whether to reliability diagrams (both shift and id)")
 
-    parser.add_argument("--num_workers", type=int, default=2,
-                        help="Number of workers for the dataloader.")
+    parser.add_argument("--num_workers", type=int, default=2)
     parser.add_argument("--redo", action=BooleanOptionalAction, default=False)
+    parser.add_argument("--freeze_frn", action=BooleanOptionalAction, default=False)
 
     args = parser.parse_args()
     return args

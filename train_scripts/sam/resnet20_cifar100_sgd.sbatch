@@ -14,7 +14,7 @@ mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
 torchrun --nproc_per_node=1 train.py \
     --distributed \
-    --model resnet18 \
+    --model resnet20 \
     --dataset cifar100 \
     --val_split 0.1 \
     --SAM
