@@ -9,5 +9,5 @@ torchrun \
     --epochs 5 \
     "$@"
 
-    # --packed \
     # --ensemble \
+    # --packed \

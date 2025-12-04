@@ -124,7 +124,6 @@ def train(args):
     os.makedirs(save_dir, exist_ok=True)
 
     model = init_model(args, device, num_classes)
-
     opt, scheduler = init_optimizer(args, model)
 
     criterion = nn.CrossEntropyLoss()
@@ -184,7 +183,6 @@ def train(args):
 
     print("[training loop]: finished")
 
-    # Rename the best checkpoint with metadata
     final_checkpoint_path = model_path(args, save_dir, best_epoch, best_val_loss, model_name)
     os.rename(best_checkpoint_path, final_checkpoint_path)
     last_epoch_checkpoint_path = model_path(args, save_dir, args.epochs, val_loss, model_name)
@@ -198,11 +196,6 @@ def train(args):
 
 def main():
     args = train_args()
-
-    # save_dir = MODEL_PATH_LOCAL + f"{args.dataset}_{args.model}_{'' if args.SAM else 'no'}_SAM/"
-    # if Path(save_dir).exists() and any(Path(save_dir).iterdir()):  # TODO: Make more robust
-    #     print(f"[warning]: model already trained at {save_dir}, skipping...")
-
     train(args)
 
 

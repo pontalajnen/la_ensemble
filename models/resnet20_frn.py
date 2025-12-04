@@ -70,10 +70,12 @@ class BasicBlock_packed(nn.Module):
         super(BasicBlock_packed, self).__init__()
         self.conv1 = PackedConv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.bn1 = PackedFRN(planes)
+        self.frn1 = PackedFRN(planes)
+        self.tlu1 = PackedTLU(planes)
         self.conv2 = PackedConv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.bn2 = PackedFRN(planes)
+        self.frn2 = PackedFRN(planes)
+        self.tlu2 = PackedTLU(planes)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
@@ -84,10 +86,10 @@ class BasicBlock_packed(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
+        out = self.tlu1(self.frn1(self.conv1(x)))
+        out = self.frn2(self.conv2(out))
         out += self.shortcut(x)
-        out = F.relu(out)
+        out = self.tlu2(out)
         return out
 
 
@@ -98,13 +100,16 @@ class Bottleneck_packed(nn.Module):
         super(Bottleneck_packed, self).__init__()
         self.conv1 = PackedConv2d(in_planes, planes, kernel_size=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.bn1 = PackedFRN(planes)
+        self.frn1 = PackedFRN(planes)
+        self.tlu1 = PackedTLU(planes)
         self.conv2 = PackedConv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.bn2 = PackedFRN(planes)
+        self.frn2 = PackedFRN(planes)
+        self.tlu2 = PackedTLU(planes)
         self.conv3 = PackedConv2d(planes, self.expansion*planes, kernel_size=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.bn3 = PackedFRN(self.expansion*planes)
+        self.frn3 = PackedFRN(self.expansion*planes)
+        self.tlu3 = PackedTLU(self.expansion*planes)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion*planes:
@@ -115,11 +120,11 @@ class Bottleneck_packed(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = F.relu(self.bn2(self.conv2(out)))
-        out = self.bn3(self.conv3(out))
+        out = self.tlu1(self.frn1(self.conv1(x)))
+        out = self.tlu2(self.frn2(self.conv2(out)))
+        out = self.frn3(self.conv3(out))
         out += self.shortcut(x)
-        out = F.relu(out)
+        out = self.tlu3(out)
         return out
 
 
