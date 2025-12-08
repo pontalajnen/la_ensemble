@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from models.resnet import torch_resnet56, ResNet18, torch_resnet18
 from models.ensemble_model import EnsembleModel
-from models.resnet20_frn import ResNet20_FRN
+from models.resnet20_frn import ResNet20_FRN, ResNet20_FRN_Packed
 from sklearn import metrics
 from torchmetrics.classification import Accuracy, F1Score  # , MulticlassCalibrationError
 from torch_uncertainty.metrics.classification import (
@@ -48,6 +48,10 @@ def load_model(args, path, device, num_classes):
         model = ResNet18(num_classes=num_classes)
     elif name == 'resnet20':
         model = ResNet20_FRN(num_classes=num_classes)
+    elif name == 'resnet20_ensemble':
+        model = EnsembleModel(model=ResNet20_FRN, num_models=5, num_classes=num_classes)
+    elif name == 'resnet20_packed':
+        model = ResNet20_FRN_Packed(num_classes=num_classes)
     elif name == 'resnet18_ensemble':
         model = EnsembleModel(model=torch_resnet18, num_models=5, num_classes=num_classes)
     elif name == 'resnet56':
