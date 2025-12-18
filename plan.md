@@ -131,3 +131,11 @@ Try all four methods for laplace on FRN:
 Train all models up to and including PackedEnsemble
 
 Test all models up to and including PackeEnsemble
+
+Check optimize prior precision
+
+packed ensembles, start with last layer
+
+Check other arguments
+
+diag with full network, check both batch norm and frn

@@ -101,14 +101,11 @@ def eval(args):
         if args.laplace:
             print(f"[laplace]: hessian approx: {args.hessian_approx}, subset: {args.subset_of_weights}")
             backend = BACKENDS[args.backend]
-            # for name, module in model.named_modules():
-            #     if isinstance(module, (FRN, TLU)):
-            #         for param in module.parameters():
-            #             param.requires_grad = False
-            # for name, module in model.named_modules():
-            #     if isinstance(module, torch.nn.BatchNorm2d):
-            #         for param in module.parameters():
-            #             param.requires_grad = False
+            # if not args.subset_of_weights == "last_layer":
+            #     for _, module in model.named_modules():
+            #         if isinstance(module, (FRN, TLU)) or isinstance(module, torch.nn.BatchNorm2d):
+            #             for param in module.parameters():
+            #                 param.requires_grad = False
 
             pred_type = args.pred_type
             if args.hessian_approx == "gp":  # TODO: Sample for every model

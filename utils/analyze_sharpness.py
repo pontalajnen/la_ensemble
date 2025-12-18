@@ -7,7 +7,8 @@ from utils.eval import load_model
 from utils.data import load_hf_dataset, load_vision_dataset
 from utils.paths import ROOT, LOCAL_STORAGE, DATA_DIR, RESULT_DIR
 from torch.backends.cuda import sdp_kernel
-from hessian_eigenthings import compute_hessian_eigenthings
+from hessian_eigenthings import compute_hessian_eigenthings  # noqa # type: ignore
+from utils.helpers import torch_device
 
 
 def main():
@@ -75,12 +76,8 @@ def main():
     model_paths = open(ROOT+"/eval_path_files/"+args.model_path_file, "r")
 
     # Set device
-    device = torch.device(
-        'cuda:0' if torch.cuda.is_available() else
-        'mps' if torch.backends.mps.is_available() else
-        'cpu'
-    )
-    print("Using device: ", device)
+    device = torch_device()
+    print(f"[device]: {device}")
 
     # Set Path to Datasets
     DATA_PATH = LOCAL_STORAGE + DATA_DIR

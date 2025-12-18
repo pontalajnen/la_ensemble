@@ -147,7 +147,7 @@ def train(args):
         train_sampler.set_epoch(epoch) if args.distributed else None
         model.train()
 
-        for batch_idx, (x, y) in enumerate(train_loader):
+        for x, y in train_loader:
             x, y = x.to(device), y.to(device)
             y = y.repeat(num_estimators) if packed else y
             if args.SAM:
@@ -202,13 +202,9 @@ def train(args):
     run.finish()
 
 
-def main():
+if __name__ == "__main__":
     args = train_args()
     train(args)
-
-
-if __name__ == "__main__":
-    main()
     if dist.is_initialized():
         dist.barrier()
         torch.cuda.synchronize()

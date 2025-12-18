@@ -46,12 +46,14 @@ def eval_args():
                         help="Whether to use Laplace approximation.")
     parser.add_argument("--approx_link", default="mc", type=str,
                         help="The approximation link to use (e.g. mc, probit, bridge, bridge_norm).")
+
     parser.add_argument("--hessian_approx", default="full", type=str,
-                        help="The Hessian approximation to use (e.g. full, diag, kron).")
+                        choices=["full", "diag", "kron"])
     parser.add_argument("--subset_of_weights", default="last_layer", type=str,
-                        choices=["last_layer", "all", "subset_of_weights"])
+                        choices=["last_layer", "all", "subnetwork"])
+
     parser.add_argument("--plot", action=BooleanOptionalAction, default=False)
-    parser.add_argument('--optimize_prior_precision', default=None, choices=['marglik', 'nll'],
+    parser.add_argument('--optimize_prior_precision', default=None, choices=['marglik', 'nll'],  # TODO: Very important, marglik, gridsearch
                         help='optimize prior precision according to specified method')
     parser.add_argument('--backend', default=None,
                         choices=['CurvlinopsGGN', 'CurvlinopsEF', 'AsdlGGN', 'AsdlEF', 'BackpackGGN', 'BackpackEF'],
@@ -60,8 +62,8 @@ def eval_args():
                         help='The number of samples used for Monte Carlo approximation of predictive distribution.')
     parser.add_argument('--num_data', default=1000, type=int,
                         help='The number of data points for Subset-of-Data (SOD) approximate GP inference.')
-    parser.add_argument('--pred_type', default="glm", type=str,
-                        help='Prediction type has to be one of "nn" or "glm".')
+    parser.add_argument('--pred_type', default="glm", type=str,  # TODO: nn important
+                        choices=["nn", "glm"])
 
     parser.add_argument('--rel_plot', action=BooleanOptionalAction, default=False,
                         help="Whether to reliability diagrams (both shift and id)")
@@ -91,16 +93,12 @@ def train_args():
                         help="Finetune the dataset using the normalization values of the pretrained dataset (VIT)")
 
     # Training
-    parser.add_argument("--batch_size", default=128, type=int,
-                        help="Batch size used in the training and validation loop.")
-    parser.add_argument("--epochs", default=200, type=int,
-                        help="Total number of epochs.")
-    parser.add_argument("--dropout", default=0.0, type=float,
-                        help="Dropout rate.")
+    parser.add_argument("--batch_size", default=128, type=int)
+    parser.add_argument("--epochs", default=200, type=int)
+    parser.add_argument("--dropout", default=0.0, type=float)
     parser.add_argument("--SAM", default=False, action=BooleanOptionalAction,
                         help="Enable SAM optimizer.")
-    parser.add_argument("--learning_rate", default=0.1, type=float,
-                        help="Base learning rate at the start of the training.")
+    parser.add_argument("--learning_rate", default=0.1, type=float)
     parser.add_argument("--lr_scheduler", type=str, default="cosine",
                         help="Learning rate scheduler.")
     parser.add_argument("--base_optimizer", type=str, default="SGD",
