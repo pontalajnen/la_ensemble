@@ -3,6 +3,7 @@ import os
 import json
 import numpy as np
 import torch
+from models.frn import FRN, TLU  # noqa
 from utils.eval import (
     load_model,
     eval_train_data,
@@ -90,7 +91,6 @@ def eval(args):
 
         feature_reduction, model = load_model(args, path=model_path, device=device, num_classes=num_classes)
         print(f"[eval]: loaded {model_name}")
-        print("[eval]: starting")
         model = model.to(device)
         model.eval()
 
@@ -99,8 +99,16 @@ def eval(args):
         # --------------------------------------------------------------------
         pred_type = args.pred_type
         if args.laplace:
-            print("[laplace]: approximation")
+            print(f"[laplace]: hessian approx: {args.hessian_approx}, subset: {args.subset_of_weights}")
             backend = BACKENDS[args.backend]
+            # for name, module in model.named_modules():
+            #     if isinstance(module, (FRN, TLU)):
+            #         for param in module.parameters():
+            #             param.requires_grad = False
+            # for name, module in model.named_modules():
+            #     if isinstance(module, torch.nn.BatchNorm2d):
+            #         for param in module.parameters():
+            #             param.requires_grad = False
 
             pred_type = args.pred_type
             if args.hessian_approx == "gp":  # TODO: Sample for every model
@@ -116,16 +124,9 @@ def eval(args):
             else:
                 model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
                                 subset_of_weights=args.subset_of_weights, backend=backend)
-            if device.type == "cuda":
-                torch.cuda.set_device(device)
-                _ = torch.tensor(0., device=device)
-                torch.cuda.synchronize(device)
             with torch.cuda.device(device):
                 print("[laplace]: fitting")
                 model.fit(train_loader, progress_bar=True)
-            if device.type == "cuda":
-                torch.cuda.synchronize(device)
-            print("[laplace]: done fitting")
             if args.optimize_prior_precision is not None:
                 model.optimize_prior_precision(pred_type=pred_type, method=args.optimize_prior_precision,
                                                link_approx=args.approx_link, val_loader=val_loader)
@@ -134,59 +135,55 @@ def eval(args):
         # Start Evaluation
         # --------------------------------------------------------------------
         if not train_done and args.eval_train:
-            print("[eval]: training data")
             nll_value = eval_train_data(model, train_loader, laplace=args.laplace, device=device, link=args.approx_link,
                                         mc_samples=args.mc_samples, pred_type=pred_type)
             results[model_name]['Train nll'] = nll_value
 
         if not in_done:
-            print("[eval]: test data")
             if args.rel_plot is True:
                 rel_plot = "ID"
             else:
                 rel_plot = None
-            ece_calc, mce_calc, aece_calc, acc, nll_value, brier_score, f1, OOD_y_preds_logits, OOD_labels, y_pred_id, y_target_id = eval_data(  # noqa
+            ece, mce, aece, acc, nll_value, brier_score, f1, y_ood_logits, y_ood, y_pred_id, y_target_id = eval_data(
                 model, test_loader, device=device, num_classes=num_classes, laplace=args.laplace,
                 link=args.approx_link, nll=True, mc_samples=args.mc_samples, pred_type=pred_type,
-                model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot)
+                model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot, data_type="test data")
             results[model_name]['clean_accuracy'] = acc.to("cpu").numpy().tolist()
             results[model_name]['f1'] = f1.to("cpu").numpy().tolist()
-            results[model_name]['ECE'] = ece_calc.to("cpu").numpy().tolist()*100
-            results[model_name]['MCE'] = mce_calc.to("cpu").numpy().tolist()*100
-            results[model_name]['aECE'] = aece_calc.to("cpu").numpy().tolist()*100
+            results[model_name]['ECE'] = ece.to("cpu").numpy().tolist()*100
+            results[model_name]['MCE'] = mce.to("cpu").numpy().tolist()*100
+            results[model_name]['aECE'] = aece.to("cpu").numpy().tolist()*100
             results[model_name]['nll'] = nll_value
             results[model_name]['brier'] = brier_score
             model_results_id.append({"y_probs": y_pred_id,
                                     "y_true": y_target_id})
 
         if not shift_done and args.eval_shift and shift_loader is not None:
-            print("[eval]: shift data")
             if rel_plot == "ID":
                 rel_plot = "SHIFT"
             else:
                 rel_plot = None
-            ece_calc, mce_calc, aece_calc, acc, nll_value, brier_score, f1, _, _, y_pred_shift, y_target_shift = eval_data(  # noqa
+            ece, mce, aece, acc, nll_value, brier_score, f1, _, _, y_pred_shift, y_target_shift = eval_data(
                 model, shift_loader, device=device, num_classes=num_classes, laplace=args.laplace,
                 link=args.approx_link, mc_samples=args.mc_samples, pred_type=pred_type, model_name=args.save_file_name,
-                num_models=num_models, rel_plot=rel_plot)
-            results[model_name]['SHIFT ECE'] = ece_calc.to("cpu").numpy().tolist()*100
-            results[model_name]['SHIFT MCE'] = mce_calc.to("cpu").numpy().tolist()*100
-            results[model_name]['SHIFT aECE'] = aece_calc.to("cpu").numpy().tolist()*100
+                num_models=num_models, rel_plot=rel_plot, data_type="shift data")
+            results[model_name]['SHIFT ECE'] = ece.to("cpu").numpy().tolist()*100
+            results[model_name]['SHIFT MCE'] = mce.to("cpu").numpy().tolist()*100
+            results[model_name]['SHIFT aECE'] = aece.to("cpu").numpy().tolist()*100
             results[model_name]['SHIFT ACCURACY'] = acc.to("cpu").numpy().tolist()
             results[model_name]['SHIFT f1'] = f1.to("cpu").numpy().tolist()
             model_results_shift.append({"y_probs": y_pred_shift,
                                         "y_true": y_target_shift})
 
         if not ood_done and args.eval_ood and ood_loader is not None:
-            print("[eval]: ood data")
-            auroc_calc, fpr_at_95_tpr_calc, ood_acc = eval_ood_data(model, ood_loader, device=device,
-                                                                    num_classes=num_classes,
-                                                                    OOD_y_preds_logits=OOD_y_preds_logits,
-                                                                    OOD_labels=OOD_labels, laplace=args.laplace,
-                                                                    link=args.approx_link, mc_samples=args.mc_samples,
-                                                                    pred_type=pred_type)
+            auroc_calc, fpr95_ood, ood_acc = eval_ood_data(
+                model, ood_loader, device=device, num_classes=num_classes,
+                y_ood_logits=y_ood_logits, OOD_labels=y_ood,
+                laplace=args.laplace, link=args.approx_link,
+                mc_samples=args.mc_samples, pred_type=pred_type
+            )
             results[model_name]['OOD AUROC'] = auroc_calc
-            results[model_name]['OOD FPR95'] = fpr_at_95_tpr_calc
+            results[model_name]['OOD FPR95'] = fpr95_ood
             results[model_name]['OOD Accuracy'] = ood_acc.to("cpu").numpy().tolist()
 
         with open(result_path/args.save_file_name, 'w') as fp:

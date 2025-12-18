@@ -5,6 +5,7 @@ def common_args():
     parser = ArgumentParser()
     parser.add_argument("--val_split", type=float, default=0.0)
     parser.add_argument("--num_workers", type=int, default=2)
+    parser.add_argument("--batch_norm", action=BooleanOptionalAction, default=False)
     return parser
 
 
@@ -131,6 +132,8 @@ def train_args():
     # Ensemble arguments
     parser.add_argument("--ensemble", action=BooleanOptionalAction, default=False)
     parser.add_argument("--num_ensemble_models", type=int, default=4)
+
+    parser.add_argument("--no_save", action=BooleanOptionalAction, default=False)
 
     args = parser.parse_args()
     return args

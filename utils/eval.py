@@ -1,11 +1,11 @@
 # Code based on https://github.com/JohannaDK/DD2412-Final-Project/blob/main/src/utils/eval_utils.py
 import torch
 import torch.nn as nn
-from models.resnet import torch_resnet56, ResNet18, torch_resnet18
+from models.resnet import torch_resnet56, ResNet18, torch_resnet18, ResNet20
 from models.ensemble_model import EnsembleModel
-from models.resnet20_frn import ResNet20_FRN, ResNet20_FRN_Packed
+from models.resnet20_frn import ResNet20_FRN, ResNet20_FRN_packed
 from sklearn import metrics
-from torchmetrics.classification import Accuracy, F1Score  # , MulticlassCalibrationError
+from torchmetrics.classification import Accuracy, F1Score
 from torch_uncertainty.metrics.classification import (
     CalibrationError,
     AdaptiveCalibrationError,
@@ -14,8 +14,6 @@ from torch_uncertainty.metrics.classification import (
 )
 import torch.distributions as dists
 import numpy as np
-import os
-from utils.paths import ROOT, MODEL_PATH
 import timm
 from models.bert import BERT
 from models.hf import HF
@@ -23,6 +21,7 @@ import plotly.graph_objects as go
 from laplace.curvature.asdl import AsdlGGN, AsdlEF
 from laplace.curvature.backpack import BackPackGGN, BackPackEF
 from laplace.curvature.curvlinops import CurvlinopsEF, CurvlinopsGGN
+from tqdm import tqdm
 
 
 BACKENDS = {
@@ -47,11 +46,15 @@ def load_model(args, path, device, num_classes):
     if name == 'resnet18':
         model = ResNet18(num_classes=num_classes)
     elif name == 'resnet20':
-        model = ResNet20_FRN(num_classes=num_classes)
+        if args.batch_norm:
+            print("="*20)
+            model = ResNet20(num_classes=num_classes)
+        else:
+            model = ResNet20_FRN(num_classes=num_classes)
     elif name == 'resnet20_ensemble':
         model = EnsembleModel(model=ResNet20_FRN, num_models=5, num_classes=num_classes)
     elif name == 'resnet20_packed':
-        model = ResNet20_FRN_Packed(num_classes=num_classes)
+        model = ResNet20_FRN_packed(num_classes=num_classes)
     elif name == 'resnet18_ensemble':
         model = EnsembleModel(model=torch_resnet18, num_models=5, num_classes=num_classes)
     elif name == 'resnet56':
@@ -121,8 +124,8 @@ def evaluate_model_lang(model, dataloader, device, criterion, nlp):
         if loss is None:
             loss = criterion(logits, y)
 
-        preds = torch.argmax(logits, dim=1)
-        correct += (preds == y).sum().item()
+        predictions = torch.argmax(logits, dim=1)
+        correct += (predictions == y).sum().item()
         total_loss += loss.item() * y.size(0)
         total_samples += y.size(0)
 
@@ -143,7 +146,7 @@ def brier(y_pred, y_true):
 
 
 def eval_train_data(model, dataloader, device, laplace, link, mc_samples, pred_type):
-    for batch in dataloader:
+    for batch in tqdm(dataloader, desc="[train data]"):
         if isinstance(batch, list):
             x = batch[0].to(device)
             y = batch[1].to(device)
@@ -159,7 +162,7 @@ def eval_train_data(model, dataloader, device, laplace, link, mc_samples, pred_t
 
 
 def eval_data(model, dataloader, device, num_classes, laplace=False, link=None, nll=False,
-              mc_samples=10, pred_type="glm", model_name=None, num_models=0, rel_plot=None):
+              mc_samples=10, pred_type="glm", model_name=None, num_models=0, rel_plot=None, data_type=""):
     # This function is called by both shift and ID evaluation
     accuracy = Accuracy(task="multiclass", num_classes=num_classes).to(device)
     f1_score = F1Score(task="multiclass", num_classes=num_classes, average="macro").to(device)
@@ -167,43 +170,38 @@ def eval_data(model, dataloader, device, num_classes, laplace=False, link=None, 
     mce_metric = CalibrationError("multiclass", num_classes=num_classes, num_bins=15, norm='max')
     aece_metric = AdaptiveCalibrationError("multiclass", num_classes=num_classes, num_bins=15, norm='l1')
 
-    y_preds = []
+    y_predictions = []
     y_targets = []
-    OOD_labels = []
-    OOD_y_preds_logits = []
+    y_ood = []
+    y_ood_logits = []
 
     with torch.no_grad():
-        # for images, targets in dataloader:
-        #    images, targets = images.to(device), targets.to(device)
-        for batch in dataloader:
+        for batch in tqdm(dataloader, desc=f"[{data_type}]"):
             if isinstance(batch, list):
                 x, y = batch
                 x = x.to(device)
-                labels = y.to(device)
+                y = y.to(device)
             else:
-                # batch = {k: v.to(device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
-                # x = batch
-                # targets = batch['labels'].to(device)
-                x, labels = batch, batch['labels'].to(device)
+                x, y = batch, batch['labels'].to(device)
 
             if isinstance(model, nn.Module):
                 probs = (torch.softmax(model(x), dim=-1))
             else:
                 probs = (model(x, link_approx=link, n_samples=mc_samples, pred_type=pred_type))
-            ece_metric.update(probs, labels)
-            mce_metric.update(probs, labels)
-            aece_metric.update(probs, labels)
-            accuracy.update(probs, labels)
-            f1_score.update(probs, labels)
+            ece_metric.update(probs, y)
+            mce_metric.update(probs, y)
+            aece_metric.update(probs, y)
+            accuracy.update(probs, y)
+            f1_score.update(probs, y)
 
-            y_preds.append(probs)
-            y_targets.append(labels)
+            y_predictions.append(probs)
+            y_targets.append(y)
 
             # OOD detection using max softmax probability
-            OOD_y_preds_logits.append(probs.detach().to(device))
-            OOD_labels.append(torch.ones(len(labels), device=device))  # ID samples are labeled as 1
+            y_ood_logits.append(probs.detach().to(device))
+            y_ood.append(torch.ones(len(y), device=device))  # ID samples are labeled as 1
 
-    y_preds = torch.cat(y_preds, dim=0)
+    y_predictions = torch.cat(y_predictions, dim=0)
     y_targets = torch.cat(y_targets, dim=0)
 
     # calculate final metrics
@@ -214,22 +212,22 @@ def eval_data(model, dataloader, device, num_classes, laplace=False, link=None, 
     f1 = f1_score.compute()
 
     # Calculate Brier score
-    brier_score = brier(y_preds, y_targets)
+    brier_score = brier(y_predictions, y_targets)
 
-    if nll:  # only for test data (not shift or ood)
-        nll = -dists.Categorical(y_preds).log_prob(y_targets).mean().item()
+    if nll:
+        nll = -dists.Categorical(y_predictions).log_prob(y_targets).mean().item()
     else:
         nll = None
 
-    return ece, mce, aece, acc, nll, brier_score, f1, OOD_y_preds_logits, OOD_labels, y_preds, y_targets
+    return ece, mce, aece, acc, nll, brier_score, f1, y_ood_logits, y_ood, y_predictions, y_targets
 
 
-def eval_ood_data(model, ood_dataloader, device, num_classes, OOD_y_preds_logits,
+def eval_ood_data(model, ood_dataloader, device, num_classes, y_ood_logits,
                   OOD_labels, laplace, link, mc_samples, pred_type="glm"):
     accuracy = Accuracy(task="multiclass", num_classes=num_classes).to(device)
 
     with torch.no_grad():
-        for batch in ood_dataloader:
+        for batch in tqdm(ood_dataloader, desc="[ood data]"):
             if isinstance(batch, list):
                 x, y = batch
                 x = x.to(device)
@@ -242,17 +240,17 @@ def eval_ood_data(model, ood_dataloader, device, num_classes, OOD_y_preds_logits
                 probs = (model(x, link_approx=link, n_samples=mc_samples, pred_type=pred_type))
             else:
                 probs = (torch.softmax(model(x), dim=-1))
-            OOD_y_preds_logits.append(probs.detach().to(device))
+            y_ood_logits.append(probs.detach().to(device))
             OOD_labels.append(torch.zeros(len(labels), device=device))  # label OOD data with 0
             accuracy.update(probs, labels)
     OOD_labels = torch.cat(OOD_labels).to(device)
-    OOD_y_preds_logits = torch.cat(OOD_y_preds_logits).to(device)
+    y_ood_logits = torch.cat(y_ood_logits).to(device)
 
     auroc_metric = AURC().to(device)
-    auroc_metric.update(OOD_y_preds_logits, OOD_labels)
+    auroc_metric.update(y_ood_logits, OOD_labels)
     auroc_calc = auroc_metric.compute().item()
 
-    confidences = OOD_y_preds_logits.max(dim=1).values
+    confidences = y_ood_logits.max(dim=1).values
     fpr95_metric = FPR95(pos_label=0).to(device)
     fpr95_metric.update(confidences, OOD_labels)
     fpr95_calc = fpr95_metric.compute().item()

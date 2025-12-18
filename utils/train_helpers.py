@@ -2,7 +2,7 @@ from models.ensemble_model import EnsembleModel
 import torch.optim as optim
 from models.resnet_packed import ResNet18_packed
 import torch
-from models.resnet import torch_resnet18, ResNet18
+from models.resnet import torch_resnet18, ResNet18, ResNet20
 import timm
 from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import ViTImageProcessor  # , ViTForImageClassification
@@ -40,6 +40,8 @@ def init_model(args, device, num_classes):
                 num_models=args.num_ensemble_models,
                 num_classes=num_classes
             )
+        elif args.batch_norm:
+            models = ResNet20(num_classes)
         else:
             models = ResNet20_FRN(num_classes)
 

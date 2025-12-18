@@ -118,3 +118,16 @@ model.fit(train_loader, progress_bar=True)
 ```
 
 | Replace FRN → BatchNorm        | Full KFAC support              | Requires retraining
+
+## Plan for December 16th
+
+Try all four methods for laplace on FRN:
+
+- [x] Diag Hessian
+- [x] Last Layer (non-prefered)
+- [ ] Freeze FRN/TLU
+- [ ] Go back to BatchNorm
+
+Train all models up to and including PackedEnsemble
+
+Test all models up to and including PackeEnsemble

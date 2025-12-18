@@ -24,12 +24,13 @@ def model_path(args, save_dir, epoch, val_loss, model_name):
     )
 
 
-def save_model(model, path):
+def save_model(model, path, args):
     state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     torch.save(state, path)
 
 
 def init_wandb(args, model_name):
+    wandb.login()
     project = f"LA_SAM_{args.dataset}_{args.model}_SAM{args.SAM}_adaptive{args.adaptive}"
     # Initialize W&B run and log hyperparameters
     run = wandb.init(project=project, name=model_name, config={
@@ -52,6 +53,36 @@ def init_wandb(args, model_name):
     artifact = wandb.Artifact("model_checkpoints", type="model")
 
     return run, artifact
+
+
+def init_dataloaders(dm, args):
+    if args.distributed:
+        train_dataset = dm.train_dataloader().dataset
+        val_dataset = dm.val_dataloader().dataset
+
+        train_sampler = DistributedSampler(train_dataset, shuffle=True)
+        val_sampler = DistributedSampler(val_dataset, shuffle=False)
+
+        train_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=args.batch_size,
+            sampler=train_sampler,
+            num_workers=args.num_workers,
+            pin_memory=False
+        )
+
+        val_loader = torch.utils.data.DataLoader(
+            val_dataset,
+            batch_size=args.batch_size,
+            sampler=val_sampler,
+            num_workers=args.num_workers,
+            pin_memory=False
+        )
+    else:
+        train_loader = dm.train_dataloader()
+        val_loader = dm.val_dataloader()
+
+    return train_loader, val_loader, train_sampler
 
 
 def train(args):
@@ -79,34 +110,9 @@ def train(args):
     dm.prepare_data()
     dm.setup("fit")
 
-    if args.distributed:
-        train_dataset = dm.train_dataloader().dataset
-        val_dataset = dm.val_dataloader().dataset
-
-        train_sampler = DistributedSampler(train_dataset, shuffle=True)
-        val_sampler = DistributedSampler(val_dataset, shuffle=False)
-
-        train_loader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=args.batch_size,
-            sampler=train_sampler,
-            num_workers=args.num_workers,
-            pin_memory=False
-        )
-
-        val_loader = torch.utils.data.DataLoader(
-            val_dataset,
-            batch_size=args.batch_size,
-            sampler=val_sampler,
-            num_workers=args.num_workers,
-            pin_memory=False
-        )
-    else:
-        train_loader = dm.train_dataloader()
-        val_loader = dm.val_dataloader()
+    train_loader, val_loader, train_sampler = init_dataloaders(dm, args)
 
     print(f"[dataset]: {args.dataset}")
-    wandb.login()
 
     seed = args.seed
     model_name = args.model + "_" + args.dataset + "_" + args.base_optimizer
@@ -171,13 +177,15 @@ def train(args):
             val_accuracy /= dist.get_world_size()
             val_loss /= dist.get_world_size()
 
-        wandb.log({"epoch": epoch, "val_accuracy": val_accuracy,
-                   "val_loss": val_loss, "lr": scheduler.get_last_lr()[0]})
+        wandb.log({
+            "epoch": epoch, "val_accuracy": val_accuracy,
+            "val_loss": val_loss, "lr": scheduler.get_last_lr()[0]
+        })
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_epoch = epoch
-            save_model(model, best_checkpoint_path)
+            save_model(model, best_checkpoint_path, args)
 
         scheduler.step()
 
@@ -187,7 +195,7 @@ def train(args):
     os.rename(best_checkpoint_path, final_checkpoint_path)
     last_epoch_checkpoint_path = model_path(args, save_dir, args.epochs, val_loss, model_name)
 
-    save_model(model, last_epoch_checkpoint_path)
+    save_model(model, last_epoch_checkpoint_path, args)
 
     artifact.add_file(final_checkpoint_path)
     wandb.log_artifact(artifact)
