@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --output=/proj/berzelius-aiics-real/users/x_ponhe/la_ensamble/logs/%A_%a_slurm.out
-#SBATCH --error=/proj/berzelius-aiics-real/users/x_ponhe/la_ensamble/logs/%A_%a_slurm.err
+#SBATCH --output=/proj/berzelius-aiics-real/users/x_ponhe/la_ensemble/logs/%A_%a_slurm.out
+#SBATCH --error=/proj/berzelius-aiics-real/users/x_ponhe/la_ensemble/logs/%A_%a_slurm.err
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user="ponhe215@student.liu.se"
 #SBATCH --gres gpu:1

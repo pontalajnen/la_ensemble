@@ -3,8 +3,8 @@
 #SBATCH --mem 8GB
 #SBATCH --cpus-per-task 4
 #SBATCH --time 48:00:00
-#SBATCH --output /proj/berzelius-aiics-real/%u/la_ensamble/logs/%J_slurm.out
-#SBATCH --error  /proj/berzelius-aiics-real/%u/la_ensamble/logs/%J_slurm.err
+#SBATCH --output /proj/berzelius-aiics-real/%u/la_ensemble/logs/%J_slurm.out
+#SBATCH --error  /proj/berzelius-aiics-real/%u/la_ensemble/logs/%J_slurm.err
 
 echo "Starting job ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
 
