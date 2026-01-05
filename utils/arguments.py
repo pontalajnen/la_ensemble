@@ -44,8 +44,7 @@ def eval_args():
 
     parser.add_argument("--laplace", action=BooleanOptionalAction, default=False, type=bool,
                         help="Whether to use Laplace approximation.")
-    parser.add_argument("--approx_link", default="mc", type=str,
-                        help="The approximation link to use (e.g. mc, probit, bridge, bridge_norm).")
+    parser.add_argument("--approx_link", default="mc", type=str, choices=["mc", "probit", "bridge", "bridge_norm"])
 
     parser.add_argument("--hessian_approx", default="full", type=str,
                         choices=["full", "diag", "kron"])
@@ -53,16 +52,14 @@ def eval_args():
                         choices=["last_layer", "all", "subnetwork"])
 
     parser.add_argument("--plot", action=BooleanOptionalAction, default=False)
-    parser.add_argument('--optimize_prior_precision', default=None, choices=['marglik', 'nll'],  # TODO: Very important, marglik, gridsearch
-                        help='optimize prior precision according to specified method')
+    parser.add_argument('--optimize_prior_precision', default=None, choices=['marglik', 'gridsearch'])
     parser.add_argument('--backend', default=None,
                         choices=['CurvlinopsGGN', 'CurvlinopsEF', 'AsdlGGN', 'AsdlEF', 'BackpackGGN', 'BackpackEF'],
                         help='The backend used for Hessian approximations')
-    parser.add_argument('--mc_samples', default=10, type=int,
-                        help='The number of samples used for Monte Carlo approximation of predictive distribution.')
+    parser.add_argument('--mc_samples', default=10, type=int)
     parser.add_argument('--num_data', default=1000, type=int,
                         help='The number of data points for Subset-of-Data (SOD) approximate GP inference.')
-    parser.add_argument('--pred_type', default="glm", type=str,  # TODO: nn important
+    parser.add_argument('--pred_type', default="nn", type=str,  # TODO: nn important
                         choices=["nn", "glm"])
 
     parser.add_argument('--rel_plot', action=BooleanOptionalAction, default=False,

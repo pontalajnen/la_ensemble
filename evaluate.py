@@ -101,11 +101,11 @@ def eval(args):
         if args.laplace:
             print(f"[laplace]: hessian approx: {args.hessian_approx}, subset: {args.subset_of_weights}")
             backend = BACKENDS[args.backend]
-            # if not args.subset_of_weights == "last_layer":
-            #     for _, module in model.named_modules():
-            #         if isinstance(module, (FRN, TLU)) or isinstance(module, torch.nn.BatchNorm2d):
-            #             for param in module.parameters():
-            #                 param.requires_grad = False
+            if not args.subset_of_weights == "last_layer" or not args.hessian_approx == "diag":
+                for _, module in model.named_modules():
+                    if isinstance(module, (FRN, TLU)) or isinstance(module, torch.nn.BatchNorm2d):
+                        for param in module.parameters():
+                            param.requires_grad = False
 
             pred_type = args.pred_type
             if args.hessian_approx == "gp":  # TODO: Sample for every model
@@ -126,7 +126,7 @@ def eval(args):
                 model.fit(train_loader, progress_bar=True)
             if args.optimize_prior_precision is not None:
                 model.optimize_prior_precision(pred_type=pred_type, method=args.optimize_prior_precision,
-                                               link_approx=args.approx_link, val_loader=val_loader)
+                                               link_approx=args.approx_link, val_loader=val_loader, progress_bar=True)
 
         # --------------------------------------------------------------------
         # Start Evaluation
@@ -147,9 +147,9 @@ def eval(args):
                 model_name=args.save_file_name, num_models=num_models, rel_plot=rel_plot, data_type="test data")
             results[model_name]['clean_accuracy'] = acc.to("cpu").numpy().tolist()
             results[model_name]['f1'] = f1.to("cpu").numpy().tolist()
-            results[model_name]['ECE'] = ece.to("cpu").numpy().tolist()*100
-            results[model_name]['MCE'] = mce.to("cpu").numpy().tolist()*100
-            results[model_name]['aECE'] = aece.to("cpu").numpy().tolist()*100
+            results[model_name]['ECE'] = ece.to("cpu").numpy().tolist() * 100
+            results[model_name]['MCE'] = mce.to("cpu").numpy().tolist() * 100
+            results[model_name]['aECE'] = aece.to("cpu").numpy().tolist() * 100
             results[model_name]['nll'] = nll_value
             results[model_name]['brier'] = brier_score
             model_results_id.append({"y_probs": y_pred_id,
@@ -164,9 +164,9 @@ def eval(args):
                 model, shift_loader, device=device, num_classes=num_classes, laplace=args.laplace,
                 link=args.approx_link, mc_samples=args.mc_samples, pred_type=pred_type, model_name=args.save_file_name,
                 num_models=num_models, rel_plot=rel_plot, data_type="shift data")
-            results[model_name]['SHIFT ECE'] = ece.to("cpu").numpy().tolist()*100
-            results[model_name]['SHIFT MCE'] = mce.to("cpu").numpy().tolist()*100
-            results[model_name]['SHIFT aECE'] = aece.to("cpu").numpy().tolist()*100
+            results[model_name]['SHIFT ECE'] = ece.to("cpu").numpy().tolist() * 100
+            results[model_name]['SHIFT MCE'] = mce.to("cpu").numpy().tolist() * 100
+            results[model_name]['SHIFT aECE'] = aece.to("cpu").numpy().tolist() * 100
             results[model_name]['SHIFT ACCURACY'] = acc.to("cpu").numpy().tolist()
             results[model_name]['SHIFT f1'] = f1.to("cpu").numpy().tolist()
             model_results_shift.append({"y_probs": y_pred_shift,
@@ -183,7 +183,7 @@ def eval(args):
             results[model_name]['OOD FPR95'] = fpr95_ood
             results[model_name]['OOD Accuracy'] = ood_acc.to("cpu").numpy().tolist()
 
-        with open(result_path/args.save_file_name, 'w') as fp:
+        with open(result_path / args.save_file_name, 'w') as fp:
             json.dump(results, fp, indent=4)
 
         num_models += 1
@@ -196,7 +196,7 @@ def eval(args):
     # --------------------------------------------------------------------
     if num_models > 1:
         output_file = args.save_file_name.replace('.', '_summary.')
-        model_results = open(result_path/args.save_file_name, 'r')
+        model_results = open(result_path / args.save_file_name, 'r')
 
         metrics_data = {}
         for line_data in model_results.read().splitlines():
@@ -221,13 +221,13 @@ def eval(args):
         for metric, values in metrics_data.items():
             metrics_summary[metric] = {
                 "average": np.mean(values),
-                "SE": np.std(values)/np.sqrt(num_models)
+                "SE": np.std(values) / np.sqrt(num_models)
             }
 
-        with open(result_path/output_file, 'w') as output:
+        with open(result_path / output_file, 'w') as output:
             json.dump(metrics_summary, output, indent=4)
 
-        print("Metrics summary saved to ", {result_path/output_file})
+        print("Metrics summary saved to ", {result_path / output_file})
 
         # --------------------------------------------------------------------
         # Plot Reliability Diagram
@@ -237,14 +237,20 @@ def eval(args):
             os.makedirs(PLOT_PATH, exist_ok=True)
             print(len(model_results_id))
             print(len(model_results_shift))
-            torch.save(model_results_id, PLOT_PATH + args.save_file_name[:-4]+"_"+str(num_models)+"_ID_values.pt")
-            torch.save(model_results_shift, PLOT_PATH + args.save_file_name[:-4]+"_"+str(num_models)+"_SHIFT_values.pt")
+            torch.save(
+                model_results_id,
+                PLOT_PATH / (args.save_file_name[:-4] + "_" + str(num_models) + "_ID_values.pt")
+            )
+            torch.save(
+                model_results_shift,
+                PLOT_PATH / (args.save_file_name[:-4] + "_" + str(num_models) + "_SHIFT_values.pt")
+            )
             plot_multi_model_reliability(model_results_id, n_bins=10, error_type='se',
                                          color="rgba(81, 127, 252, 0.92)",
-                                         model_name=args.save_file_name[:-4]+"_"+str(num_models)+"_ID_SE")
+                                         model_name=args.save_file_name[:-4] + "_" + str(num_models) + "_ID_SE")
             plot_multi_model_reliability(model_results_shift, n_bins=10, error_type='se',
                                          color="rgba(252, 127, 81, 0.92)",
-                                         model_name=args.save_file_name[:-4]+"_"+str(num_models)+"_SHIFT_SE")
+                                         model_name=args.save_file_name[:-4] + "_" + str(num_models) + "_SHIFT_SE")
 
 
 def encode_mrpc(examples, tokenizer):

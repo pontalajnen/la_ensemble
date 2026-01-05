@@ -25,6 +25,7 @@ def model_path(args, save_dir, epoch, val_loss, model_name):
 
 
 def save_model(model, path, args):
+    if args.no_save: return
     state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     torch.save(state, path)
 
@@ -192,12 +193,12 @@ def train(args):
     print("[training loop]: finished")
 
     final_checkpoint_path = model_path(args, save_dir, best_epoch, best_val_loss, model_name)
-    os.rename(best_checkpoint_path, final_checkpoint_path)
+    if not args.no_save: os.rename(best_checkpoint_path, final_checkpoint_path)
     last_epoch_checkpoint_path = model_path(args, save_dir, args.epochs, val_loss, model_name)
 
     save_model(model, last_epoch_checkpoint_path, args)
 
-    artifact.add_file(final_checkpoint_path)
+    if not args.no_save: artifact.add_file(final_checkpoint_path)
     wandb.log_artifact(artifact)
     run.finish()
 

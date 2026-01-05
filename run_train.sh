@@ -8,6 +8,7 @@ torchrun \
     --val_split 0.1 \
     --epochs 5 \
     --no_save \
+    --packed \
     "$@"
 
     # --ensemble \

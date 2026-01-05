@@ -47,7 +47,7 @@ def load_model(args, path, device, num_classes):
         model = ResNet18(num_classes=num_classes)
     elif name == 'resnet20':
         if args.batch_norm:
-            print("="*20)
+            print("=" * 20)
             model = ResNet20(num_classes=num_classes)
         else:
             model = ResNet20_FRN(num_classes=num_classes)
@@ -140,7 +140,7 @@ def brier(y_pred, y_true):
     finally:
         def one_hot(targets, nb_classes):
             res = np.eye(nb_classes)[np.array(targets).reshape(-1)]
-            return res.reshape(list(targets.shape)+[nb_classes])
+            return res.reshape(list(targets.shape) + [nb_classes])
 
         return metrics.mean_squared_error(y_pred, one_hot(y_true, y_pred.shape[-1]))
 

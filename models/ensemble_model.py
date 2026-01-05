@@ -8,6 +8,7 @@ class EnsembleModel(nn.Module):
     def __init__(self, model=ResNet18, num_models=4, num_classes=10):
         super().__init__()
         seeds = [x for x in range(num_models)]
+        print(f"[ensemble num models]: {num_models}")
 
         self.models = nn.ModuleList()
         for seed in seeds:

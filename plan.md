@@ -124,7 +124,7 @@ model.fit(train_loader, progress_bar=True)
 Try all four methods for laplace on FRN:
 
 - [x] Diag Hessian
-- [x] Last Layer (non-prefered)
+- [x] Last Layer (non-preferred)
 - [ ] Freeze FRN/TLU
 - [ ] Go back to BatchNorm
 
@@ -132,10 +132,13 @@ Train all models up to and including PackedEnsemble
 
 Test all models up to and including PackeEnsemble
 
-Check optimize prior precision
+Check optimize prior precision [x]
 
-packed ensembles, start with last layer
+Packed ensembles, start with last layer
 
 Check other arguments
 
-diag with full network, check both batch norm and frn
+## Diag full network, check both batch norm and frn
+
+- Batch Norm [ ]
+- FRN [x]
