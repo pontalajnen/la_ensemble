@@ -19,7 +19,7 @@ python3 evaluate.py \
     --model_path_file resnet20_cifar10_sgd_packed.txt \
     --model_type resnet20_packed \
     --dataset cifar10 \
-    --batch_size 32 \
+    --batch_size 128 \
 
     # --shift_severity 3 \
     # --num_data 100 \

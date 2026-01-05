@@ -15,11 +15,11 @@ mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
 
 python3 evaluate.py \
-    --save_file_name resnet18_cifar10_sgd_ensemble.json \
-    --model_path_file resnet18_cifar10_sgd_ensemble.txt \
-    --model_type resnet18_ensemble \
+    --save_file_name resnet20_cifar10_sgd_ensemble.json \
+    --model_path_file resnet20_cifar10_sgd_ensemble.txt \
+    --model_type resnet20_ensemble \
     --dataset cifar10 \
-    --batch_size 32 \
+    --batch_size 128 \
 
     # --shift_severity 3 \
     # --num_data 100 \

@@ -22,4 +22,5 @@ python3 evaluate.py \
     --batch_size 32 \
     --laplace \
     --hessian_approx kron \
-    --subset_of_weights all
+    --subset_of_weights all \
+    --optimize_prior_precision gridsearch
