@@ -19,13 +19,12 @@ from utils.helpers import torch_device
 def model_path(args, save_dir, epoch, val_loss, model_name):
     return os.path.join(
         save_dir,
-        (f"model={args.model}-epoch={epoch:02d}-val_loss={val_loss:.4f}-"
-         f"optimizer={args.base_optimizer}-rho={args.rho}-adaptive={args.adaptive}-model_name={model_name}.pth")
+        (f"mn={model_name}-epoch={epoch:02d}-val_loss={val_loss:.3f}-"
+         f"rho={args.rho}-adaptive={args.adaptive}.pth")
     )
 
 
 def save_model(model, path, args):
-    if args.no_save: return
     state = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
     torch.save(state, path)
 
@@ -54,6 +53,13 @@ def init_wandb(args, model_name):
     artifact = wandb.Artifact("model_checkpoints", type="model")
 
     return run, artifact
+
+
+def create_model_name(args):
+    model_name = args.model + "_" + args.dataset + "_" + args.base_optimizer
+    model_name += "_ensemble" if args.ensemble else ""
+    model_name += "_packed" if args.packed else ""
+    return model_name
 
 
 def init_dataloaders(dm, args):
@@ -115,15 +121,12 @@ def train(args):
 
     print(f"[dataset]: {args.dataset}")
 
-    seed = args.seed
-    model_name = args.model + "_" + args.dataset + "_" + args.base_optimizer
-    model_name += "_ensemble" if args.ensemble else ""
-    model_name += "_packed" if args.packed else ""
+    model_name = create_model_name(args)
     torch_seed = torch.Generator()
-    torch_seed.manual_seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
+    torch_seed.manual_seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)
+    np.random.seed(args.seed)
 
     run, artifact = init_wandb(args, model_name)
 
@@ -136,7 +139,7 @@ def train(args):
     criterion = nn.CrossEntropyLoss()
     best_val_loss = float("inf")
     best_epoch = 0
-    best_checkpoint_path = os.path.join(save_dir, f"model_{args.model}_seed{seed}_best.pth")
+    best_checkpoint_path = os.path.join(save_dir, f"model_{args.model}_seed{args.seed}_best.pth")
     packed = "ResNet_packed" in [type(m).__name__ for _, m in model.named_modules()]
     if packed:
         num_estimators = model.module.num_estimators if model.module else model.num_estimators
@@ -193,12 +196,13 @@ def train(args):
     print("[training loop]: finished")
 
     final_checkpoint_path = model_path(args, save_dir, best_epoch, best_val_loss, model_name)
-    if not args.no_save: os.rename(best_checkpoint_path, final_checkpoint_path)
+    os.rename(best_checkpoint_path, final_checkpoint_path)
     last_epoch_checkpoint_path = model_path(args, save_dir, args.epochs, val_loss, model_name)
 
     save_model(model, last_epoch_checkpoint_path, args)
+    print(f"[saving model]: {last_epoch_checkpoint_path}")
 
-    if not args.no_save: artifact.add_file(final_checkpoint_path)
+    artifact.add_file(final_checkpoint_path)
     wandb.log_artifact(artifact)
     run.finish()
 

@@ -18,10 +18,10 @@ class BasicBlock(nn.Module):
         self.tlu2 = TLU(planes)
 
         self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion*planes:
+        if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
-                nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False),
-                FRN(self.expansion*planes)
+                nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
+                FRN(self.expansion * planes)
             )
 
     def forward(self, x):
@@ -43,16 +43,16 @@ class Bottleneck(nn.Module):
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.frn2 = FRN(planes)
         self.tlu2 = TLU(planes)
-        self.conv3 = nn.Conv2d(planes, self.expansion*planes, kernel_size=1, bias=False)
-        self.frn3 = FRN(self.expansion*planes)
+        self.conv3 = nn.Conv2d(planes, self.expansion * planes, kernel_size=1, bias=False)
+        self.frn3 = FRN(self.expansion * planes)
         self.tlu3 = TLU(planes)
         self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion*planes:
+        if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
-                nn.Conv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False),
-                FRN(self.expansion*planes)
+                nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
+                FRN(self.expansion * planes)
             )
-        self.tlu4 = TLU(self.expansion*planes)
+        self.tlu4 = TLU(self.expansion * planes)
 
     def forward(self, x):
         out = self.tlu1(self.frn1(self.conv1(x)))
@@ -70,19 +70,18 @@ class BasicBlock_packed(nn.Module):
         super(BasicBlock_packed, self).__init__()
         self.conv1 = PackedConv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.frn1 = PackedFRN(planes)
-        self.tlu1 = PackedTLU(planes)
+        self.frn1 = PackedFRN(planes, num_estimators=num_estimators, alpha=alpha, gamma=gamma)
+        self.tlu1 = PackedTLU(planes, num_estimators=num_estimators, alpha=alpha, gamma=gamma)
         self.conv2 = PackedConv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.frn2 = PackedFRN(planes)
-        self.tlu2 = PackedTLU(planes)
-
+        self.frn2 = PackedFRN(planes, num_estimators=num_estimators, alpha=alpha, gamma=gamma)
+        self.tlu2 = PackedTLU(planes, num_estimators=num_estimators, alpha=alpha, gamma=gamma)
         self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion*planes:
+        if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
-                PackedConv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False,
+                PackedConv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False,
                              num_estimators=num_estimators, alpha=alpha, gamma=gamma),
-                PackedFRN(self.expansion*planes)
+                PackedFRN(self.expansion * planes, num_estimators=num_estimators, alpha=alpha, gamma=gamma)
             )
 
     def forward(self, x):
@@ -106,17 +105,17 @@ class Bottleneck_packed(nn.Module):
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
         self.frn2 = PackedFRN(planes)
         self.tlu2 = PackedTLU(planes)
-        self.conv3 = PackedConv2d(planes, self.expansion*planes, kernel_size=1, bias=False,
+        self.conv3 = PackedConv2d(planes, self.expansion * planes, kernel_size=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha, gamma=gamma)
-        self.frn3 = PackedFRN(self.expansion*planes)
-        self.tlu3 = PackedTLU(self.expansion*planes)
+        self.frn3 = PackedFRN(self.expansion * planes)
+        self.tlu3 = PackedTLU(self.expansion * planes)
 
         self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion*planes:
+        if stride != 1 or in_planes != self.expansion * planes:
             self.shortcut = nn.Sequential(
-                PackedConv2d(in_planes, self.expansion*planes, kernel_size=1, stride=stride, bias=False,
+                PackedConv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False,
                              num_estimators=num_estimators, alpha=alpha, gamma=gamma),
-                PackedFRN(self.expansion*planes)
+                PackedFRN(self.expansion * planes)
             )
 
     def forward(self, x):
@@ -142,7 +141,7 @@ class ResNet(nn.Module):
         self.linear = nn.Linear(64 * block.expansion, num_classes)
 
     def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1]*(num_blocks-1)
+        strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
             layers.append(block(self.in_planes, planes, stride))
@@ -165,25 +164,29 @@ class ResNet_packed(nn.Module):
     def __init__(self, block, num_blocks, num_estimators=4, alpha=2, gamma=1, num_classes=10):
         super(ResNet_packed, self).__init__()
         self.in_planes = 16
+        self.num_estimators = num_estimators
+        self.alpha = alpha
+        self.gamma = gamma
 
         self.conv1 = PackedConv2d(3, self.in_planes, kernel_size=3, stride=1, padding=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha,
                                   gamma=gamma, first=True)
-        self.frn1 = PackedFRN(self.in_planes)
-        self.tlu1 = PackedTLU(self.in_planes)
+        self.frn1 = PackedFRN(self.in_planes, num_estimators=num_estimators, alpha=alpha, gamma=gamma)
+        self.tlu1 = PackedTLU(self.in_planes, num_estimators=num_estimators, alpha=alpha, gamma=gamma)
         self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-        self.linear = PackedLinear(64*block.expansion, num_classes, num_estimators=num_estimators,
+        self.linear = PackedLinear(64 * block.expansion, num_classes, num_estimators=num_estimators,
                                    alpha=alpha, gamma=gamma, last=True)
 
-        self.num_estimators = num_estimators
-
     def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1]*(num_blocks-1)
+        strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
-            layers.append(block(self.in_planes, planes, stride))
+            layers.append(block(self.in_planes, planes, stride,
+                                num_estimators=self.num_estimators,
+                                alpha=self.alpha,
+                                gamma=self.gamma))
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
@@ -205,8 +208,8 @@ class ResNet_packed(nn.Module):
 
 # Cifar10 models
 def ResNet20_FRN(num_classes):
-    return ResNet(BasicBlock, [3, 3, 3], num_classes)
+    return ResNet(BasicBlock, [3, 3, 3], num_classes=num_classes)
 
 
 def ResNet20_FRN_packed(num_classes):
-    return ResNet(BasicBlock, [3, 3, 3], num_classes)
+    return ResNet_packed(BasicBlock_packed, [3, 3, 3], num_classes=num_classes)

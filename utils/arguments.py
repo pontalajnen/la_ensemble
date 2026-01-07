@@ -128,7 +128,5 @@ def train_args():
     parser.add_argument("--ensemble", action=BooleanOptionalAction, default=False)
     parser.add_argument("--num_ensemble_models", type=int, default=4)
 
-    parser.add_argument("--no_save", action=BooleanOptionalAction, default=False)
-
     args = parser.parse_args()
     return args
