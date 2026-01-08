@@ -22,6 +22,8 @@ python3 evaluate.py \
     --batch_size 4 \
     --laplace \
     --hessian_approx kron \
+    --subset_of_weights last_layer \
+    --optimize_prior_precision marglik
 
     # --shift_severity 3 \
     # --num_data 100 \

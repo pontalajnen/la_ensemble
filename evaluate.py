@@ -67,7 +67,10 @@ def eval(args):
 
     for model_path in model_paths.read().splitlines():
         model_path = model_path.strip()
-        model_name = model_path.split("model_name=")[1].replace(".ckpt", "")
+        try:
+            model_name = model_path.split("model_name=")[1].replace(".ckpt", "")
+        except IndexError:
+            model_name = model_path.split("mn=")[1].split("-")[0]
 
         if model_name not in results.keys():
             ood_done = in_done = False
