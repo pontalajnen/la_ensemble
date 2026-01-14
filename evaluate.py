@@ -13,7 +13,7 @@ from utils.eval import (
     BACKENDS
 )
 from utils.data import load_hf_dataset, load_vision_dataset
-from laplace import Laplace
+from laplace import Laplace  # type: ignore
 from utils.paths import ROOT, LOCAL_STORAGE, DATA_DIR, RESULT_DIR
 # from laplace.curvature.asdfghjkl import AsdfghjklHessian
 # from laplace.curvature.curvature import CurvatureInterface
@@ -77,16 +77,10 @@ def eval(args):
             shift_done = train_done = False
             results[model_name] = {}
         else:
-            ood_done = in_done = True
-            shift_done = train_done = True
-            if 'clean_accuracy' not in results[model_name].keys():
-                in_done = False
-            if 'SHIFT ECE' not in results[model_name].keys():
-                shift_done = False
-            if 'OOD AUROC' not in results[model_name].keys():
-                ood_done = False
-            if 'Train nll' not in results[model_name].keys():
-                train_done = False
+            in_done = 'clean_accuracy' in results[model_name].keys()
+            ood_done = 'OOD AUROC' in results[model_name].keys()
+            shift_done = 'SHIFT ECE' in results[model_name].keys()
+            train_done = 'Train nll' in results[model_name].keys()
             if ood_done and in_done and shift_done and train_done:
                 print(f"[eval]: skipping {model_name}, already done")
                 num_models += 1
@@ -124,9 +118,10 @@ def eval(args):
             else:
                 model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
                                 subset_of_weights=args.subset_of_weights, backend=backend)
-            with torch.cuda.device(device):
-                print("[laplace]: fitting")
-                model.fit(train_loader, progress_bar=True)
+
+            print("[laplace]: fitting")
+            model.fit(train_loader, progress_bar=True)
+
             if args.optimize_prior_precision is not None:
                 model.optimize_prior_precision(pred_type=pred_type, method=args.optimize_prior_precision,
                                                link_approx=args.approx_link, val_loader=val_loader, progress_bar=True)
