@@ -142,3 +142,13 @@ Check other arguments
 
 - Batch Norm [ ]
 - FRN [x]
+
+## Packed Ensembles with Laplace
+
+```python
+# Check if this works:
+model = Laplace(model, ..., sub_mask_1)
+model.fit()
+model.optimize_prior_precision()
+model = Laplace(model, ..., sub_mask_2)
+```

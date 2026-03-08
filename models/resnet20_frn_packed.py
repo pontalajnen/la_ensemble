@@ -1,6 +1,7 @@
 from torch_uncertainty.layers import PackedConv2d, PackedLinear
 from einops import rearrange
 from models.frn import PackedFRN, PackedTLU
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -41,6 +42,7 @@ class ResNet_packed(nn.Module):
         self.num_estimators = num_estimators
         self.alpha = alpha
         self.gamma = gamma
+        self.ensemble = None
 
         self.conv1 = PackedConv2d(3, self.in_planes, kernel_size=3, stride=1, padding=1, bias=False,
                                   num_estimators=num_estimators, alpha=alpha,
@@ -75,9 +77,32 @@ class ResNet_packed(nn.Module):
 
         if self.training:
             return out
+
+        if self.ensemble is not None:
+            batch_size = out.shape[0] // self.num_estimators
+            return out[
+                self.ensemble * batch_size: (self.ensemble + 1) * batch_size
+            ]
+
         out = rearrange(out, "(m b) c -> b m c", m=self.num_estimators)
         out = out.mean(dim=1)
         return out
+
+
+class LaplaceEnsemble(nn.Module):
+    def __init__(self, laplace_list):
+        super().__init__()
+        self.laplace_list = laplace_list
+
+    def forward(self, x):
+        probs = []
+        for k, la in enumerate(self.laplace_list):
+            # self.base_model.ensemble = k
+            p = la(x)
+            probs.append(p)
+
+        avg_prob = torch.stack(probs).mean(dim=0)
+        return avg_prob
 
 
 def ResNet20_FRN_packed(num_classes):

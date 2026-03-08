@@ -9,7 +9,8 @@ from transformers import ViTImageProcessor  # , ViTForImageClassification
 from torchvision.transforms import v2
 # from sam import SAM
 from utils.sam import SAM
-from models.resnet20_frn import ResNet20_FRN, ResNet20_FRN_packed
+from models.resnet20_frn import ResNet20_FRN
+from models.resnet20_frn_packed import ResNet20_FRN_packed
 
 
 def init_model(args, device, num_classes):

@@ -1,5 +1,6 @@
 # Code partly taken from https://github.com/MJordahn/Decoupled-Layers-for-Calibrated-NNs/blob/main/src/experiments/01_eval_models.py  # noqa
 import os
+from copy import deepcopy
 import json
 import numpy as np
 import torch
@@ -13,15 +14,78 @@ from utils.eval import (
     BACKENDS
 )
 from utils.data import load_hf_dataset, load_vision_dataset
-from laplace import Laplace  # type: ignore
+from laplace import Laplace
 from utils.paths import ROOT, LOCAL_STORAGE, DATA_DIR, RESULT_DIR
 # from laplace.curvature.asdfghjkl import AsdfghjklHessian
 # from laplace.curvature.curvature import CurvatureInterface
 from utils.arguments import eval_args
 from pathlib import Path
 from utils.helpers import torch_device
+from torch.nn.utils import parameters_to_vector
+from models.resnet20_frn_packed import LaplaceEnsemble
 
-# Only for one model at a time, with possible ensemble but different paths
+
+def estimator_indices(model):
+    num_estimators = model.num_estimators
+    all_params = parameters_to_vector(model.parameters())
+    total_params = all_params.numel()
+
+    last_layer = model.linear
+    last_layer_params = sum(p.numel() for p in last_layer.parameters())
+
+    params_per_est = last_layer_params // num_estimators
+
+    last_layer_start = total_params - last_layer_params
+
+    # Get indices for each estimator
+    estimator_indices_list = []
+    for est_idx in range(num_estimators):
+        est_start = last_layer_start + (est_idx * params_per_est)
+        est_end = est_start + params_per_est
+        estimator_indices_list.append(torch.arange(est_start, est_end))
+
+    return estimator_indices_list
+
+
+def laplace_fit(model, feature_reduction, train_loader, val_loader, args, subnetwork_indices):
+    print(f"[laplace]: hessian approx: {args.hessian_approx}, subset: {args.subset_of_weights}")
+    backend = BACKENDS[args.backend]
+
+    if args.subset_of_weights not in ["last_layer", "subnetwork"] or not args.hessian_approx == "diag":
+        print(f"[num_params]: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+        for _, module in model.named_modules():
+            if isinstance(module, (FRN, TLU)) or isinstance(module, torch.nn.BatchNorm2d):
+                for param in module.parameters():
+                    # continue
+                    param.requires_grad = False
+        print(f"[num_params]: {sum(p.numel() for p in model.parameters() if p.requires_grad)}")
+
+    pred_type = args.pred_type
+    if args.hessian_approx == "gp":  # TODO: Sample for every model
+        print("[laplace]: gp approximation")
+        model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
+                        subset_of_weights=args.subset_of_weights, independent_outputs=True,
+                        n_subset=args.num_data, backend=backend)
+        print("Consider reducing batch size or GP inference!")
+        pred_type = "gp"
+    if feature_reduction is not None:
+        print("[laplace]: feature reduction")
+        model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
+                        subset_of_weights=args.subset_of_weights, backend=backend,
+                        feature_reduction=feature_reduction)
+    else:
+        print("[laplace]: normal fitting")
+        model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
+                        subset_of_weights=args.subset_of_weights, backend=backend,
+                        subnetwork_indices=subnetwork_indices)
+
+    print("[laplace]: fitting")
+    model.fit(train_loader, progress_bar=True)
+
+    if args.optimize_prior_precision is not None:
+        model.optimize_prior_precision(pred_type=pred_type, method=args.optimize_prior_precision,
+                                       link_approx=args.approx_link, val_loader=val_loader, progress_bar=True)
+    return model, pred_type
 
 
 def eval(args):
@@ -91,40 +155,28 @@ def eval(args):
         model = model.to(device)
         model.eval()
 
-        # --------------------------------------------------------------------
-        # Laplace Approximation
-        # --------------------------------------------------------------------
         pred_type = args.pred_type
         if args.laplace:
-            print(f"[laplace]: hessian approx: {args.hessian_approx}, subset: {args.subset_of_weights}")
-            backend = BACKENDS[args.backend]
-            if not args.subset_of_weights == "last_layer" or not args.hessian_approx == "diag":
-                for _, module in model.named_modules():
-                    if isinstance(module, (FRN, TLU)) or isinstance(module, torch.nn.BatchNorm2d):
-                        for param in module.parameters():
-                            param.requires_grad = False
+            subnetwork_indices = estimator_indices(model) if args.subset_of_weights == "subnetwork" else [None]
+            # subnetwork_indices = torch.cat(subnetwork_indices)
+            models = []
+            for index, subnetwork_indice in enumerate(subnetwork_indices):
+                temp_model = deepcopy(model)
+                temp_model.ensemble = index
 
-            pred_type = args.pred_type
-            if args.hessian_approx == "gp":  # TODO: Sample for every model
-                model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
-                                subset_of_weights=args.subset_of_weights, independent_outputs=True,
-                                n_subset=args.num_data, backend=backend)
-                print("Consider reducing batch size or GP inference!")
-                pred_type = "gp"
-            if feature_reduction is not None:
-                model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
-                                subset_of_weights=args.subset_of_weights, backend=backend,
-                                feature_reduction=feature_reduction)
-            else:
-                model = Laplace(model, "classification", hessian_structure=args.hessian_approx,
-                                subset_of_weights=args.subset_of_weights, backend=backend)
+                print(len(subnetwork_indice))
+                temp_model, pred_type = laplace_fit(
+                    temp_model, feature_reduction, train_loader, val_loader, args, subnetwork_indice
+                )
+                print(f"[ensemble index]: {temp_model.model.ensemble}")
+                models.append(temp_model)
 
-            print("[laplace]: fitting")
-            model.fit(train_loader, progress_bar=True)
-
-            if args.optimize_prior_precision is not None:
-                model.optimize_prior_precision(pred_type=pred_type, method=args.optimize_prior_precision,
-                                               link_approx=args.approx_link, val_loader=val_loader, progress_bar=True)
+            model = LaplaceEnsemble(models)
+            if None in subnetwork_indices:
+                raise NotImplementedError("[non ensemble]: yet to implement normal models")
+                laplace_fit(
+                    temp_model, feature_reduction, train_loader, val_loader, args
+                )
 
         # --------------------------------------------------------------------
         # Start Evaluation

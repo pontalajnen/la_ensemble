@@ -4,7 +4,7 @@
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user="ponhe215@student.liu.se"
 #SBATCH --gres gpu:1
-#SBATCH --time 48:00:00
+#SBATCH --time 08:00:00
 #SBATCH -C "thin"
 
 echo "Starting job ${SLURM_JOB_ID} on ${SLURMD_NODENAME}"
@@ -15,14 +15,14 @@ mamba activate /home/x_ponhe/.conda/envs/pytorch-2.5.1-python-3.10
 
 
 python3 evaluate.py \
-    --save_file_name resnet20_cifar10_sgd_packed_la.json \
+    --save_file_name rn20_c10_sgd_packed_la.json \
     --model_path_file resnet20_cifar10_sgd_packed.txt \
     --model_type resnet20_packed \
     --dataset cifar10 \
     --batch_size 4 \
     --laplace \
-    --hessian_approx kron \
-    --subset_of_weights last_layer \
+    --hessian_approx diag \
+    --subset_of_weights subnetwork \
     --optimize_prior_precision marglik
 
     # --shift_severity 3 \
