@@ -50,10 +50,10 @@ run "Packed"       "${MODEL}_${DATASET}_SGD_packed"    "$NO_SAM_DIR" --packed
 run "SAM"          "${MODEL}_${DATASET}_SGD"           "$SAM_DIR"    --SAM
 run "SGLD+SAM"     "${MODEL}_${DATASET}_SGLD_SAM"      "$SAM_DIR"    --base_optimizer SGLD --SAM \
     --learning_rate 0.5 --warmup_epochs 5 --epochs 200 --batch_size 1024 \
-    --sgld_sampling_lr 1e-4 --sgld_noise_factor 0.01
+    --sgld_sampling_lr 1e-4 --sgld_temperature 1e-3
 run "SGLD"         "${MODEL}_${DATASET}_SGLD"          "$NO_SAM_DIR" --base_optimizer SGLD \
-    --learning_rate 0.411407 --warmup_epochs 4 --epochs 200 --batch_size 1024 \
-    --sgld_sampling_lr 1.15179e-05 --sgld_noise_factor 0.000888362 \
+    --learning_rate 0.5 --warmup_epochs 5 --epochs 200 --batch_size 1024 \
+    --sgld_sampling_lr 1e-04 --sgld_temperature 1e-3 \
     --burn_in_epochs 40
 
 echo ""

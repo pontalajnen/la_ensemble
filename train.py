@@ -1,5 +1,6 @@
 from xml.parsers.expat import model
 
+import math
 import torch
 import os
 from tqdm import tqdm
@@ -92,8 +93,13 @@ def train(args):
 
     using_sgld = isinstance(optimizer, SGLD)
     burn_in = args.burn_in_epochs if args.burn_in_epochs is not None else args.epochs // 2
+    num_train_samples = len(train_loader.dataset) if using_sgld else None
     sgld_samples = []
     sgld_sample_paths_file = os.path.join(save_dir, f"sgld_samples_{model_name}_seed{args.seed}.txt")
+    sgld_val_loss_file = os.path.join(save_dir, f"best_val_loss_{model_name}_seed{args.seed}.txt")
+    # Cool-down window: cosine from end-of-burn-in LR to sgld_sampling_lr.
+    cooldown_epochs = min(5, max(0, args.epochs - burn_in - 1)) if using_sgld and args.sgld_sampling_lr is not None else 0
+    burn_in_end_lr = None
 
     print("[training loop]: starting")
     for epoch in tqdm(range(args.epochs), desc="Epochs"):
@@ -103,9 +109,26 @@ def train(args):
 
         in_sampling_phase = using_sgld and epoch >= burn_in
 
-        if in_sampling_phase and args.sgld_sampling_lr is not None:
+        if using_sgld:
+            # SGLD's step() always injects noise, so burn-in (pure SGD) is
+            # emulated by zeroing the temperature until sampling starts.
             for g in optimizer.param_groups:
-                g['lr'] = args.sgld_sampling_lr
+                g['temperature'] = args.sgld_temperature if in_sampling_phase else 0.0
+
+        if using_sgld and epoch == burn_in and args.sgld_sampling_lr is not None:
+            burn_in_end_lr = optimizer.param_groups[0]['lr']
+
+        if in_sampling_phase and args.sgld_sampling_lr is not None:
+            # Cosine cool-down from burn_in_end_lr → sgld_sampling_lr over cooldown_epochs.
+            offset = epoch - burn_in
+            if offset < cooldown_epochs and burn_in_end_lr is not None:
+                t = (offset + 1) / max(1, cooldown_epochs)
+                cos = 0.5 * (1 + math.cos(math.pi * t))
+                new_lr = args.sgld_sampling_lr + (burn_in_end_lr - args.sgld_sampling_lr) * cos
+            else:
+                new_lr = args.sgld_sampling_lr
+            for g in optimizer.param_groups:
+                g['lr'] = new_lr
 
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
@@ -129,7 +152,7 @@ def train(args):
                 for name, p in model.named_parameters():
                     if name in perturbations:
                         p.data.sub_(perturbations[name])
-                optimizer.step(add_noise=in_sampling_phase)
+                optimizer.step(num_samples=num_train_samples)
                 optimizer.zero_grad()
             elif args.SAM:
                 enable_running_stats(model)
@@ -144,7 +167,7 @@ def train(args):
             elif using_sgld:
                 loss = sum([criterion(pred, y) for pred in model(x)]) if args.ensemble else criterion(model(x), y)
                 loss.mean().backward() if args.ensemble else loss.backward()
-                optimizer.step(add_noise=in_sampling_phase)
+                optimizer.step(num_samples=num_train_samples)
                 optimizer.zero_grad()
             else:
                 loss = sum([criterion(pred, y) for pred in model(x)]) if args.ensemble else criterion(model(x), y)
@@ -178,7 +201,7 @@ def train(args):
 
         log_dict = {
             "epoch": epoch, "val_accuracy": val_accuracy,
-            "val_loss": val_loss, "lr": scheduler.get_last_lr()[0],
+            "val_loss": val_loss, "lr": optimizer.param_groups[0]['lr'],
             "sgld_samples_collected": len(sgld_samples),
         }
 
@@ -186,8 +209,12 @@ def train(args):
             best_val_loss = val_loss
             best_epoch = epoch
             save_model(model, best_checkpoint_path, args)
+            if using_sgld:
+                with open(sgld_val_loss_file, "w") as f:
+                    f.write(f"{float(best_val_loss):.6f}\n{best_epoch}\n")
 
-        scheduler.step()
+        if not in_sampling_phase:
+            scheduler.step()
 
     print("[training loop]: finished")
 

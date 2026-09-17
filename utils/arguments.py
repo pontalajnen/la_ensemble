@@ -118,8 +118,10 @@ def train_args():
     parser.add_argument("--num_ensemble_models", type=int, default=4)
 
     # SGLD arguments (used when --base_optimizer SGLD)
-    parser.add_argument("--sgld_noise_factor", default=1.0, type=float,
-                        help="Scales the Langevin noise: std = sqrt(2 * lr * noise_factor).")
+    parser.add_argument("--sgld_temperature", default=1e-3, type=float,
+                        help="Posterior temperature: noise std = sqrt(2 * lr * temperature / num_samples).")
+    parser.add_argument("--sgld_gamma", default=0.0, type=float,
+                        help="SGHMC-style momentum/friction coefficient, in [0, 1]. 0 disables momentum.")
     parser.add_argument("--burn_in_epochs", default=None, type=int,
                         help="Epochs before collecting posterior samples (default: half of --epochs).")
     parser.add_argument("--sgld_sampling_lr", default=None, type=float,

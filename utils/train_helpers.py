@@ -102,7 +102,8 @@ def init_optimizer(args, model):
     elif args.base_optimizer == "SGLD":
         base_optimizer = SGLD(model.parameters(), lr=args.learning_rate,
                               weight_decay=args.weight_decay,
-                              noise_factor=args.sgld_noise_factor)
+                              temperature=args.sgld_temperature,
+                              gamma=args.sgld_gamma)
     else:
         raise Exception("Requested optimizer does not exist! Optimizer has to be one of 'SGD', 'AdamW', 'SGLD'")
 

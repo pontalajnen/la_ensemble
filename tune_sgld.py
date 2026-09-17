@@ -37,7 +37,7 @@ SEARCH_SPACE = {
     "--learning_rate":     (0.1,  2.0,  "log"),
     "--warmup_epochs":     (3,    15,   "int"),
     "--sgld_sampling_lr":  (1e-6, 1e-3, "log"),
-    "--sgld_noise_factor": (1e-4, 0.1,  "log"),
+    "--sgld_temperature":  (1e-5, 1e-1, "log"),
     "--burn_in_epochs":    (20,   40,   "int"),
 }
 
