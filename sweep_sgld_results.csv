@@ -1,0 +1,22 @@
+trial,config,variant,seed,lr,gamma,temperature,sampling_lr,val_loss,clean_accuracy,ECE,nll,OOD AUROC,SHIFT ACCURACY,SHIFT ECE,samples_file
+1,baseline,nonpacked,201,0.5,0.0,0.001,0.0001,0.48666,0.8371,63.3326,1.6763,0.8859,0.8024,60.2828,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed201.txt
+2,hot_lowsamp,nonpacked,202,0.5,0.0,0.01,0.0001,0.498254,0.8237,62.0500,1.6856,0.8944,0.7878,58.9144,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed202.txt
+3,hot_hisamp,nonpacked,203,0.5,0.0,0.01,0.001,0.473105,0.8293,62.6105,1.6827,0.8990,0.7934,59.4607,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed203.txt
+4,sghmc_weak,nonpacked,204,0.5,0.1,0.01,0.001,0.401971,0.8660,65.5089,1.6308,0.9137,0.8150,60.9299,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed204.txt
+5,sghmc_strong,nonpacked,205,0.5,0.02,0.01,0.001,0.41463,0.8448,64.0322,1.6666,0.9114,0.7922,59.3902,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed205.txt
+6,sghmc_hot,nonpacked,206,0.5,0.02,0.1,0.001,0.44872,0.8417,63.8874,1.6736,0.9098,0.7887,59.2231,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed206.txt
+7,baseline,packed,207,0.5,0.0,0.001,0.0001,0.789437,0.7389,56.3439,1.8401,0.9035,0.7132,54.1193,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed207.txt
+8,hot_lowsamp,packed,208,0.5,0.0,0.01,0.0001,0.780824,0.7285,55.3490,1.8462,0.9014,0.7021,53.0200,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed208.txt
+9,hot_hisamp,packed,209,0.5,0.0,0.01,0.001,0.753783,0.7400,56.2353,1.8295,0.8928,0.7062,53.2494,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed209.txt
+1,baseline,nonpacked,201,0.5,0.0,0.001,0.0001,0.48666,0.8371,63.3326,1.6763,0.8859,0.8024,60.2828,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed201.txt
+2,hot_lowsamp,nonpacked,202,0.5,0.0,0.01,0.0001,0.498254,0.8237,62.0500,1.6856,0.8944,0.7878,58.9144,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed202.txt
+3,hot_hisamp,nonpacked,203,0.5,0.0,0.01,0.001,0.473105,0.8293,62.6105,1.6827,0.8990,0.7934,59.4607,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed203.txt
+4,sghmc_weak,nonpacked,204,0.5,0.1,0.01,0.001,0.401971,0.8660,65.5089,1.6308,0.9137,0.8150,60.9299,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed204.txt
+5,sghmc_strong,nonpacked,205,0.5,0.02,0.01,0.001,0.41463,0.8448,64.0322,1.6666,0.9114,0.7922,59.3902,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed205.txt
+6,sghmc_hot,nonpacked,206,0.5,0.02,0.1,0.001,0.44872,0.8417,63.8874,1.6736,0.9098,0.7887,59.2231,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_seed206.txt
+7,baseline,packed,207,0.5,0.0,0.001,0.0001,0.789437,0.7389,56.3439,1.8401,0.9035,0.7132,54.1193,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed207.txt
+8,hot_lowsamp,packed,208,0.5,0.0,0.01,0.0001,0.780824,0.7285,55.3490,1.8462,0.9014,0.7021,53.0200,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed208.txt
+9,hot_hisamp,packed,209,0.5,0.0,0.01,0.001,0.753783,0.7400,56.2353,1.8295,0.8928,0.7062,53.2494,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed209.txt
+10,sghmc_weak,packed,210,0.5,0.1,0.01,0.001,0.434719,0.8533,65.2781,1.6772,0.9066,0.8091,61.4823,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed210.txt
+11,sghmc_strong,packed,211,0.5,0.02,0.01,0.001,0.49635,0.8250,63.0696,1.7184,0.9202,0.7793,59.0932,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed211.txt
+12,sghmc_hot,packed,212,0.5,0.02,0.1,0.001,0.528307,0.8165,62.5337,1.7361,0.9107,0.7663,58.0712,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed212.txt
