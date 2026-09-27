@@ -1,26 +1,4 @@
 #!/usr/bin/env python3
-"""
-Curated grid search for SGLD training over both ResNet20 and
-ResNet20 packed. 12 total configs, ~2-4h each = fits in ~48h.
-
-Design principle: hold most things fixed at known-good values
-(epochs=200, warmup=5, batch=1024, burn_in=100, sample_interval=5,
-num_sgld_samples=20) and vary the four axes that actually control
-posterior sampling behavior:
-
-    learning_rate      burn-in LR
-    sgld_gamma         SGHMC friction (0 = plain SGLD)
-    sgld_temperature   posterior temperature
-    sgld_sampling_lr   fixed LR during sampling phase
-
-The grid deliberately probes higher-noise regimes than the previous
-random sweep — with T=1e-3, sampling_lr=1e-4, N=45000 the effective
-noise is ~2e-6, i.e. no sampling was happening.
-
-Results append to sweep_sgld_results.csv row-by-row (interrupt-safe).
-Runs are skipped if the sgld_samples_*.txt file already exists.
-"""
-
 import csv
 import glob
 import json
@@ -47,15 +25,13 @@ FIXED_ARGS = {
     "--weight_decay":       "5e-4",
 }
 
-# Six configurations, applied to both non-packed and packed ⇒ 12 runs.
-# Each row: (name, lr, gamma, temperature, sampling_lr)
+# Configurations applied to both non-packed and packed.
+# Each row: (name, lr, temperature, sampling_lr)
 CONFIGS = [
-    ("baseline",       0.5, 0.0,  1e-3, 1e-4),   # matches run_all_models.sh
-    ("hot_lowsamp",    0.5, 0.0,  1e-2, 1e-4),   # more noise via higher T
-    ("hot_hisamp",     0.5, 0.0,  1e-2, 1e-3),   # +larger sampling lr
-    ("sghmc_weak",     0.5, 0.1,  1e-2, 1e-3),   # weak momentum
-    ("sghmc_strong",   0.5, 0.02, 1e-2, 1e-3),   # strong momentum
-    ("sghmc_hot",      0.5, 0.02, 1e-1, 1e-3),   # strong momentum + hot posterior
+    ("baseline",    0.5, 1e-3, 1e-4),   # matches run_all_models.sh
+    ("hot_lowsamp", 0.5, 1e-2, 1e-4),   # more noise via higher T
+    ("hot_hisamp",  0.5, 1e-2, 1e-3),   # +larger sampling lr
+    ("very_hot",    0.5, 1e-1, 1e-3),   # hottest posterior
 ]
 
 VARIANTS = [
@@ -100,7 +76,7 @@ def read_val_loss(packed, seed):
             return None
 
 
-def train(trial_idx, cfg_name, lr, gamma, temp, samp_lr, packed, seed):
+def train(trial_idx, cfg_name, lr, temp, samp_lr, packed, seed):
     if os.path.exists(samples_path(packed, seed)):
         print(f"[skip] samples already exist for {cfg_name} "
               f"{'packed' if packed else 'nonpacked'} seed={seed}")
@@ -110,7 +86,6 @@ def train(trial_idx, cfg_name, lr, gamma, temp, samp_lr, packed, seed):
     for k, v in {**FIXED_ARGS, "--seed": str(seed)}.items():
         args += [k, v]
     args += ["--learning_rate",    f"{lr:.6g}"]
-    args += ["--sgld_gamma",       f"{gamma:.6g}"]
     args += ["--sgld_temperature", f"{temp:.6g}"]
     args += ["--sgld_sampling_lr", f"{samp_lr:.6g}"]
     args += VARIANTS[1][1] if packed else VARIANTS[0][1]
@@ -118,7 +93,7 @@ def train(trial_idx, cfg_name, lr, gamma, temp, samp_lr, packed, seed):
     print(f"\n{'='*70}")
     print(f"[trial {trial_idx}] {cfg_name} | "
           f"{'packed' if packed else 'nonpacked'} | seed={seed}")
-    print(f"  lr={lr}  gamma={gamma}  T={temp}  sampling_lr={samp_lr}")
+    print(f"  lr={lr}  T={temp}  sampling_lr={samp_lr}")
     print(f"{'='*70}")
     proc = subprocess.run(args)
     return proc.returncode == 0 and os.path.exists(samples_path(packed, seed))
@@ -163,7 +138,7 @@ def main():
     os.makedirs(PATH_FILES_DIR, exist_ok=True)
 
     fieldnames = (["trial", "config", "variant", "seed",
-                   "lr", "gamma", "temperature", "sampling_lr",
+                   "lr", "temperature", "sampling_lr",
                    "val_loss"]
                   + EVAL_METRICS
                   + ["samples_file"])
@@ -178,11 +153,11 @@ def main():
 
         for variant_name, _ in VARIANTS:
             packed = (variant_name == "packed")
-            for cfg_idx, (cfg_name, lr, gamma, temp, samp_lr) in enumerate(CONFIGS):
+            for cfg_idx, (cfg_name, lr, temp, samp_lr) in enumerate(CONFIGS):
                 trial_idx += 1
                 seed = SEED_BASE + trial_idx
 
-                ok = train(trial_idx, cfg_name, lr, gamma, temp, samp_lr,
+                ok = train(trial_idx, cfg_name, lr, temp, samp_lr,
                            packed, seed)
                 if not ok:
                     print(f"[trial {trial_idx}] training FAILED — logging row anyway")
@@ -197,7 +172,6 @@ def main():
                     "variant":      variant_name,
                     "seed":         seed,
                     "lr":           lr,
-                    "gamma":        gamma,
                     "temperature":  temp,
                     "sampling_lr":  samp_lr,
                     "val_loss":     read_val_loss(packed, seed),

@@ -8,28 +8,12 @@ class SGLD(Optimizer):
     Stochastic Gradient Langevin Dynamics (SGLD) optimizer with temperature scaling
     and noise normalization based on dataset size.
 
-    Updates parameters with Gaussian noise:
     θ ← θ - lr * grad + sqrt(2 * lr * temperature / num_samples) * N(0, 1)
-
-    With momentum (gamma > 0) the SGHMC update (Wenzel et al. 2020 Alg. 1) is:
-    p ← (1 - gamma) * p - lr * grad + sqrt(2 * gamma * temperature / num_samples) * N(0, I)
-    θ ← θ + lr * p
     """
 
-    def __init__(self, params, lr=0.001, weight_decay=0, temperature=1e-3, gamma=0.0):
-        if gamma < 0.0 or gamma > 1.0:
-            raise ValueError(
-                f"Invalid momentum / friction coefficient: {gamma}")
-
-        defaults = dict(lr=lr, weight_decay=weight_decay,
-                        temperature=temperature, gamma=gamma)
+    def __init__(self, params, lr=0.001, weight_decay=0, temperature=1e-3):
+        defaults = dict(lr=lr, weight_decay=weight_decay, temperature=temperature)
         super().__init__(params, defaults)
-
-        # initialize momentum state
-        for group in self.param_groups:
-            for p in group['params']:
-                state = self.state[p]
-                state['momentum'] = torch.zeros_like(p.data)
 
     @torch.no_grad()
     def step(self, num_samples):
@@ -38,7 +22,6 @@ class SGLD(Optimizer):
             lr = group['lr']
             wd = group['weight_decay']
             temp = group['temperature']
-            gamma = group['gamma']
 
             for p in group['params']:
                 if p.grad is None:
@@ -47,25 +30,9 @@ class SGLD(Optimizer):
                 if wd != 0:
                     grad = grad.add(p.data, alpha=wd)
 
-                if gamma != 0:
-                    state = self.state[p]
-                    momentum = state['momentum']
-
-                    # SGHMC (Chen et al. 2014, Wenzel et al. 2020 Alg. 1):
-                    #   m ← (1 - γ) m - h ∇U + √(2γT) ξ,  θ ← θ + h m
-                    # γ absorbs the continuous-time friction × step size, so
-                    # the noise variance has no explicit lr factor.
-                    momentum.mul_(1 - gamma).add_(grad, alpha=-lr)
-                    noise_std = math.sqrt(2.0 * gamma * temp / num_samples)
-                    momentum.add_(torch.randn_like(p.data) * noise_std)
-                    p.data.add_(momentum, alpha=lr)
-                else:
-                    # gradient descent step
-                    p.data.add_(grad, alpha=-lr)
-                    # add Langevin noise
-                    noise = torch.randn_like(p.data)
-                    noise_std = math.sqrt(2.0 * lr * temp / num_samples)
-                    p.data.add_(noise, alpha=noise_std)
+                p.data.add_(grad, alpha=-lr)
+                noise_std = math.sqrt(2.0 * lr * temp / num_samples)
+                p.data.add_(torch.randn_like(p.data), alpha=noise_std)
         return loss
 
 
