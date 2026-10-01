@@ -9,7 +9,7 @@ import torch.nn as nn
 from utils.data import load_data_module
 from utils.sam import enable_running_stats, disable_running_stats
 from utils.eval import evaluate_model
-from utils.paths import LOCAL_STORAGE, DATA_DIR, MODEL_PATH_LOCAL
+from utils.paths import LOCAL_STORAGE, DATA_DIR, MODEL_PATH_LOCAL, DATA_PATH
 import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
 from utils.train_helpers import init_model, init_transformer, init_optimizer
@@ -60,9 +60,6 @@ def init_dataloaders(dm):
 def train(args):
     device = torch_device()
     print("[device]:", device)
-
-    DATA_PATH = LOCAL_STORAGE + DATA_DIR
-
     dm, num_classes = load_data_module(args, DATA_PATH)
 
     if args.model == "vit":
@@ -198,12 +195,6 @@ def train(args):
             dist.all_reduce(val_loss, op=dist.ReduceOp.SUM)
             val_accuracy /= dist.get_world_size()
             val_loss /= dist.get_world_size()
-
-        log_dict = {
-            "epoch": epoch, "val_accuracy": val_accuracy,
-            "val_loss": val_loss, "lr": optimizer.param_groups[0]['lr'],
-            "sgld_samples_collected": len(sgld_samples),
-        }
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss

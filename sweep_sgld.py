@@ -27,11 +27,36 @@ FIXED_ARGS = {
 
 # Configurations applied to both non-packed and packed.
 # Each row: (name, lr, temperature, sampling_lr)
+#
+# Grid traces (temperature × sampling_lr) — the two knobs that jointly
+# set the effective posterior noise magnitude. lr (burn-in) is held at 0.5.
+#
+#                        sampling_lr
+#                 1e-5      1e-4      3e-4      1e-3
+#        1e-4      —        cold      —          —
+#   T =  1e-3    verycold  baseline   —         base_hi
+#        1e-2      —        warm     warm_mid   warm_hi
+#        3e-2      —         —        —         hot
+#        1e-1      —         —        —        very_hot
 CONFIGS = [
-    ("baseline",    0.5, 1e-3, 1e-4),   # matches run_all_models.sh
-    ("hot_lowsamp", 0.5, 1e-2, 1e-4),   # more noise via higher T
-    ("hot_hisamp",  0.5, 1e-2, 1e-3),   # +larger sampling lr
-    ("very_hot",    0.5, 1e-1, 1e-3),   # hottest posterior
+    ("verycold",  0.5, 1e-3, 1e-5),
+    ("cold",      0.5, 1e-4, 1e-4),
+    ("baseline",  0.5, 1e-3, 1e-4),
+    ("warm",      0.5, 1e-2, 1e-4),
+    ("base_hi",   0.5, 1e-3, 1e-3),
+    ("warm_mid",  0.5, 1e-2, 3e-4),
+    ("warm_hi",   0.5, 1e-2, 1e-3),
+    ("hot",       0.5, 3e-2, 1e-3),
+    ("very_hot",  0.5, 1e-1, 1e-3),
+]
+
+# Packed-only refinement around the `verycold` optimum
+# (T=1e-3, s_lr=1e-5 won all metrics on packed in the initial sweep).
+PACKED_EXTRA = [
+    ("vc_deep",   0.5, 1e-3, 1e-6),   # even smaller step
+    ("vc_lowT",   0.5, 1e-4, 1e-5),   # colder posterior
+    ("vc_hiT",    0.5, 3e-3, 1e-5),   # slightly warmer posterior
+    ("vc_step",   0.5, 1e-3, 3e-5),   # slightly larger step
 ]
 
 VARIANTS = [
@@ -47,7 +72,7 @@ CSV_PATH       = "sweep_sgld_results.csv"
 EVAL_METRICS = ["clean_accuracy", "ECE", "nll", "OOD AUROC",
                 "SHIFT ACCURACY", "SHIFT ECE"]
 
-SEED_BASE = 200
+SEED_BASE = 300
 
 
 def model_name(packed):
@@ -153,7 +178,8 @@ def main():
 
         for variant_name, _ in VARIANTS:
             packed = (variant_name == "packed")
-            for cfg_idx, (cfg_name, lr, temp, samp_lr) in enumerate(CONFIGS):
+            configs = CONFIGS + (PACKED_EXTRA if packed else [])
+            for cfg_idx, (cfg_name, lr, temp, samp_lr) in enumerate(configs):
                 trial_idx += 1
                 seed = SEED_BASE + trial_idx
 

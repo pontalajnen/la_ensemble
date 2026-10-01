@@ -15,3 +15,5 @@ MODEL_PATH_LOCAL = "./experiment_results/"
 
 # where the results of evaluate.py are stored
 RESULT_DIR = "./experiment_results/table_metrics/"
+
+DATA_PATH = LOCAL_STORAGE + DATA_DIR
