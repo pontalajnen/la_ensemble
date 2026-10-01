@@ -36,38 +36,57 @@ def _load(path):
     return df
 
 
-def plot_metric_bars(df, variant, outpath):
+BASELINE_COLORS = ["#dc2626", "#9333ea", "#0891b2"]
+
+
+def _split_baselines(df, variant):
     sub = df[df["variant"] == variant].copy()
-    if sub.empty:
+    is_bl = sub["config"].astype(str).str.startswith("sgd")
+    return sub[~is_bl].copy(), sub[is_bl].copy()
+
+
+def plot_metric_bars(df, variant, outpath):
+    sgld, baselines = _split_baselines(df, variant)
+    if sgld.empty and baselines.empty:
         return
-    # order configs by NLL asc so best-first
-    sub = sub.sort_values("nll", ascending=True).reset_index(drop=True)
+    # order SGLD configs by NLL asc so best-first
+    sgld = sgld.sort_values("nll", ascending=True).reset_index(drop=True)
 
     fig, axes = plt.subplots(2, 3, figsize=(15, 8))
-    fig.suptitle(f"SGLD sweep — {variant}", fontsize=14, fontweight="bold")
+    fig.suptitle(f"sweep — {variant}", fontsize=14, fontweight="bold")
 
     for ax, (col, label, higher_is_better) in zip(axes.flat, METRICS):
-        vals = sub[col].values
-        configs = sub["config"].values
-        best_idx = int(np.argmax(vals) if higher_is_better else np.argmin(vals))
-        colors = ["#3b82f6"] * len(vals)
-        colors[best_idx] = "#22c55e"
+        vals = sgld[col].values
+        configs = sgld["config"].values
+        if len(vals):
+            best_idx = int(np.argmax(vals) if higher_is_better else np.argmin(vals))
+            colors = ["#3b82f6"] * len(vals)
+            colors[best_idx] = "#22c55e"
+            bars = ax.bar(range(len(vals)), vals, color=colors, edgecolor="black", linewidth=0.5)
+            ax.set_xticks(range(len(vals)))
+            ax.set_xticklabels(configs, rotation=45, ha="right", fontsize=8)
+            for bar, v in zip(bars, vals):
+                if np.isfinite(v):
+                    ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
+                            f"{v:.3g}", ha="center", va="bottom", fontsize=7)
 
-        bars = ax.bar(range(len(vals)), vals, color=colors, edgecolor="black", linewidth=0.5)
-        ax.set_xticks(range(len(vals)))
-        ax.set_xticklabels(configs, rotation=45, ha="right", fontsize=8)
+        # dashed horizontal lines for SGD baselines in this variant
+        for i, (_, br) in enumerate(baselines.iterrows()):
+            v = br[col]
+            if np.isfinite(v):
+                c = BASELINE_COLORS[i % len(BASELINE_COLORS)]
+                ax.axhline(v, color=c, linestyle="--", linewidth=1.5,
+                           label=f"{br['config']} ({v:.3g})")
+
         arrow = "↑" if higher_is_better else "↓"
         ax.set_title(f"{label} {arrow}")
         ax.grid(axis="y", alpha=0.3)
+        if len(baselines):
+            ax.legend(fontsize=7, loc="best")
 
-        # annotate values
-        for bar, v in zip(bars, vals):
-            if np.isfinite(v):
-                ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                        f"{v:.3g}", ha="center", va="bottom", fontsize=7)
-
-        # ylim so annotations don't clip
-        finite = vals[np.isfinite(vals)]
+        # ylim must include baselines too so lines are visible
+        all_vals = np.concatenate([vals, baselines[col].values]) if len(baselines) else vals
+        finite = all_vals[np.isfinite(all_vals)]
         if len(finite):
             lo, hi = finite.min(), finite.max()
             margin = (hi - lo) * 0.15 or abs(hi) * 0.05 or 1.0
@@ -80,7 +99,8 @@ def plot_metric_bars(df, variant, outpath):
 
 
 def plot_heatmap(df, variant, metric, outpath, higher_is_better=False):
-    sub = df[df["variant"] == variant].copy()
+    sub = df[(df["variant"] == variant) &
+             (~df["config"].astype(str).str.startswith("sgd"))].copy()
     if sub.empty or sub[metric].isna().all():
         return
     pivot = sub.pivot_table(index="temperature", columns="sampling_lr",
@@ -115,15 +135,18 @@ def plot_heatmap(df, variant, metric, outpath, higher_is_better=False):
 
 
 def plot_variant_compare(df, outpath):
-    """Side-by-side bar chart comparing nonpacked vs packed on each metric."""
-    variants = sorted(df["variant"].unique())
+    """Grouped-bar comparison of SGLD nonpacked vs packed, SGD baselines overlaid."""
+    sgld = df[~df["config"].astype(str).str.startswith("sgd")].copy()
+    baselines = df[df["config"].astype(str).str.startswith("sgd")].copy()
+    variants = sorted(sgld["variant"].unique())
     if len(variants) < 2:
         return
-    configs = sorted(df["config"].unique(),
-                     key=lambda c: df.loc[df["config"] == c, "nll"].mean())
+    configs = sorted(sgld["config"].unique(),
+                     key=lambda c: sgld.loc[sgld["config"] == c, "nll"].mean())
 
     fig, axes = plt.subplots(2, 3, figsize=(15, 8))
-    fig.suptitle("nonpacked vs packed", fontsize=14, fontweight="bold")
+    fig.suptitle("SGLD nonpacked vs packed (SGD baselines dashed)",
+                 fontsize=14, fontweight="bold")
 
     width = 0.4
     x = np.arange(len(configs))
@@ -131,17 +154,23 @@ def plot_variant_compare(df, outpath):
 
     for ax, (col, label, higher_is_better) in zip(axes.flat, METRICS):
         for i, v in enumerate(variants):
-            sub = df[df["variant"] == v].set_index("config").reindex(configs)
+            sub = sgld[sgld["variant"] == v].set_index("config").reindex(configs)
             vals = sub[col].values
             offset = (i - (len(variants) - 1) / 2) * width
             ax.bar(x + offset, vals, width, label=v,
                    color=palette.get(v, None), edgecolor="black", linewidth=0.4)
+        for i, (_, br) in enumerate(baselines.iterrows()):
+            v = br[col]
+            if np.isfinite(v):
+                c = BASELINE_COLORS[i % len(BASELINE_COLORS)]
+                ax.axhline(v, color=c, linestyle="--", linewidth=1.3,
+                           label=f"{br['config']} ({v:.3g})")
         ax.set_xticks(x)
         ax.set_xticklabels(configs, rotation=45, ha="right", fontsize=8)
         arrow = "↑" if higher_is_better else "↓"
         ax.set_title(f"{label} {arrow}")
         ax.grid(axis="y", alpha=0.3)
-        ax.legend(fontsize=8)
+        ax.legend(fontsize=7)
 
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.savefig(outpath, dpi=140, bbox_inches="tight")

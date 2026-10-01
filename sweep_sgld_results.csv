@@ -21,3 +21,6 @@ trial,config,variant,seed,lr,temperature,sampling_lr,val_loss,clean_accuracy,ECE
 20,vc_lowT,packed,320,0.5,0.0001,1e-05,0.770754,0.7340,55.8262,1.8404,0.8885,0.7062,53.3800,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed320.txt
 21,vc_hiT,packed,321,0.5,0.003,1e-05,0.771015,0.7297,55.3771,1.8403,0.8851,0.7058,53.3013,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed321.txt
 22,vc_step,packed,322,0.5,0.001,3e-05,0.799259,0.7150,54.1173,1.8568,0.8707,0.6920,52.1181,experiment_results/cifar10_resnet20_no_SAM/sgld_samples_resnet20_cifar10_SGLD_packed_seed322.txt
+,sgd_single,nonpacked,,,,,,0.9053,3.8445,0.3139,0.9105,0.8428,7.3700,
+,sgd_ensemble,nonpacked,,,,,,0.9301,2.4343,0.2188,0.9093,0.8841,4.2722,
+,sgd_packed,packed,,,,,,0.8962,1.4975,0.3158,0.9161,0.8405,0.8022,

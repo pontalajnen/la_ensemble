@@ -57,6 +57,10 @@ def format_row(row, col_widths, cols):
     return "  ".join(parts)
 
 
+def is_baseline(row):
+    return str(row.get("config", "")).startswith("sgd")
+
+
 def print_variant(variant, rows, sort_key):
     if not rows:
         return
@@ -68,16 +72,23 @@ def print_variant(variant, rows, sort_key):
         for h, *_ in HPARAMS:
             r[h] = parse_float(r.get(h))
 
+    baselines = [r for r in rows if is_baseline(r)]
+    sgld = [r for r in rows if not is_baseline(r)]
+
     # sort direction: NLL down (lower better) unless overridden
     if sort_key == "acc":
-        rows.sort(key=lambda r: -(r["clean_accuracy"] or -1))
+        key_fn = lambda r: -(r["clean_accuracy"] or -1)
     elif sort_key == "ece":
-        rows.sort(key=lambda r: (r["ECE"] if r["ECE"] is not None else 1e9))
-    else:  # "nll"
-        rows.sort(key=lambda r: (r["nll"] if r["nll"] is not None else 1e9))
+        key_fn = lambda r: (r["ECE"] if r["ECE"] is not None else 1e9)
+    else:
+        key_fn = lambda r: (r["nll"] if r["nll"] is not None else 1e9)
+    sgld.sort(key=key_fn)
+    baselines.sort(key=key_fn)
+    rows = baselines + sgld
 
     print("\n" + "=" * 100)
-    print(f"{variant.upper()}  ({len(rows)} configs, sorted by {sort_key})")
+    print(f"{variant.upper()}  ({len(rows)} rows: {len(baselines)} SGD baseline(s) + "
+          f"{len(sgld)} SGLD configs, sorted by {sort_key})")
     print("=" * 100)
 
     # header
@@ -109,18 +120,35 @@ def print_variant(variant, rows, sort_key):
     header = "  ".join(labels[n].rjust(col_widths[n]) for n, _ in cols)
     print(header)
     print("-" * len(header))
-    for r in rows:
+    for r in baselines:
+        print(format_row(r, col_widths, cols))
+    if baselines and sgld:
+        print("-" * len(header))
+    for r in sgld:
         print(format_row(r, col_widths, cols))
 
-    # best config per metric
-    print("\n  Best per metric:")
-    for m, alias, up, fmt in METRICS:
-        vals = [(r[m], r["config"]) for r in rows if r[m] is not None]
+    # best per metric — SGLD and baselines reported separately
+    def _best(rs, m, up):
+        vals = [(r[m], r["config"]) for r in rs if r[m] is not None]
         if not vals:
-            continue
-        best = max(vals) if up else min(vals)
-        arrow = "↑" if up else "↓"
-        print(f"    {alias+arrow:8s}  {fmt.format(best[0])}   ({best[1]})")
+            return None
+        return max(vals) if up else min(vals)
+
+    if sgld:
+        print("\n  Best SGLD per metric:")
+        for m, alias, up, fmt in METRICS:
+            b = _best(sgld, m, up)
+            if b:
+                arrow = "↑" if up else "↓"
+                print(f"    {alias+arrow:8s}  {fmt.format(b[0])}   ({b[1]})")
+    if baselines:
+        print("\n  SGD baselines:")
+        for r in baselines:
+            cells = []
+            for m, alias, up, fmt in METRICS:
+                if r[m] is not None:
+                    cells.append(f"{alias}={fmt.format(r[m])}")
+            print(f"    {r['config']:14s}  " + "  ".join(cells))
 
 
 def main():
