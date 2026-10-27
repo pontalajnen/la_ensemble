@@ -1,0 +1,14 @@
+trial,config,variant,seed,lr,temperature,sampling_lr,val_loss,clean_accuracy,ECE,nll,OOD AUROC,SHIFT ACCURACY,SHIFT ECE,samples_file
+1,vcold,nonpacked,601,0.05,0.001,1e-05,0.313937,0.9269,70.0705,1.5392,0.8027,0.1860,1.9181,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_seed601.txt
+2,base,nonpacked,602,0.05,0.001,0.0001,0.300722,0.9287,70.2432,1.5380,0.6949,0.2469,7.1625,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_seed602.txt
+3,warm,nonpacked,603,0.05,0.01,0.0001,0.291295,0.9292,70.3460,1.5385,0.8615,0.2023,4.7401,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_seed603.txt
+4,hot,nonpacked,604,0.05,0.01,0.001,0.259717,0.9254,69.9654,1.5415,0.8581,0.1394,4.3837,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_seed604.txt
+5,vcold,packed,605,0.05,0.001,1e-05,0.234966,0.9156,69.4444,1.5610,0.8682,0.1943,3.9917,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_packed_seed605.txt
+6,base,packed,606,0.05,0.001,0.0001,0.249057,0.9195,69.8111,1.5582,0.8797,0.1893,2.3496,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_packed_seed606.txt
+7,warm,packed,607,0.05,0.01,0.0001,0.212526,0.9171,69.6265,1.5619,0.8588,0.2038,6.2938,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_packed_seed607.txt
+8,hot,packed,608,0.05,0.01,0.001,0.239203,0.9156,69.4874,1.5628,0.8796,0.1877,4.5974,experiment_results/cifar10_resnet18_no_SAM/sgld_samples_resnet18_cifar10_SGLD_packed_seed608.txt
+,sgd_mom,nonpacked,,,,,,0.9482,2.9332,0.1975,0.8653,0.1744,62.2233,
+,sgd_mom_packed,packed,,,,,,0.9522,1.8242,0.1651,0.8123,0.1838,31.0230,
+,sgd_nomom,nonpacked,,,,,,0.9391,3.4980,0.2371,0.5604,0.1354,62.9547,
+,sgd_nomom_packed,packed,,,,,,0.9404,2.5221,0.2016,0.8257,0.2587,31.5220,
+,sgld_baseline,nonpacked,,,,,,0.9297,70.3502,1.5361,0.8961,0.1751,2.9025,

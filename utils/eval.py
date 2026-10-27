@@ -44,6 +44,9 @@ def load_model(args, path, device, num_classes):
         model = ResNet20_FRN_packed(num_classes=num_classes)
     elif name == 'resnet18_ensemble':
         model = EnsembleModel(model=torch_resnet18, num_models=5, num_classes=num_classes)
+    elif name == 'resnet18_packed':
+        from models.resnet_packed import ResNet18_packed
+        model = ResNet18_packed(num_classes=num_classes)
     elif name == 'resnet56':
         model = torch_resnet56(num_classes=num_classes)
     elif name == "vit":

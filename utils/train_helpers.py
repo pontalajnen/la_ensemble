@@ -31,7 +31,7 @@ def init_model(args, device, num_classes):
         print("[model] loaded")
         models = models.to(device)
 
-    if args.model == "resnet20":
+    elif args.model == "resnet20":
         if args.packed:
             print("[model]: resnet20 packed")
             models = ResNet20_FRN_packed(num_classes)

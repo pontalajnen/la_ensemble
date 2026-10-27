@@ -44,6 +44,8 @@ def create_model_name(args):
     model_name = args.model + "_" + args.dataset + "_" + args.base_optimizer
     if args.base_optimizer == "SGLD" and args.SAM:
         model_name += "_SAM"
+    if args.base_optimizer == "SGD" and args.momentum == 0.0:
+        model_name += "_nomom"
     model_name += "_ensemble" if args.ensemble else ""
     model_name += "_packed" if args.packed else ""
     return model_name
