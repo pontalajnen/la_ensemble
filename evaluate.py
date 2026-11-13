@@ -4,7 +4,6 @@ from copy import deepcopy
 import json
 import numpy as np
 import torch
-from models.frn import FRN, TLU  # noqa
 from utils.eval import (
     load_model,
     eval_train_data,

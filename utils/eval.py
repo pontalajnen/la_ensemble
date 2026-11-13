@@ -3,8 +3,6 @@ import torch
 import torch.nn as nn
 from models.resnet import torch_resnet56, ResNet18, torch_resnet18, ResNet20
 from models.ensemble_model import EnsembleModel
-from models.resnet20_frn import ResNet20_FRN
-from models.resnet20_frn_packed import ResNet20_FRN_packed
 from sklearn import metrics
 from torchmetrics.classification import Accuracy, F1Score
 from torch_uncertainty.metrics.classification import (
@@ -16,7 +14,6 @@ from torch_uncertainty.metrics.classification import (
 import torch.distributions as dists
 import numpy as np
 import timm
-from models.bert import BERT
 from models.hf import HF
 import plotly.graph_objects as go
 from tqdm import tqdm

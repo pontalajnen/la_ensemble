@@ -100,6 +100,11 @@ def train(args):
     cooldown_epochs = min(5, max(0, args.epochs - burn_in - 1)) if using_sgld and args.sgld_sampling_lr is not None else 0
     burn_in_end_lr = None
 
+    # Per-epoch convergence log: epoch, train_loss, val_loss, val_accuracy, lr, temperature, phase
+    convergence_file = os.path.join(save_dir, f"convergence_{model_name}_seed{args.seed}.csv")
+    with open(convergence_file, "w") as f:
+        f.write("epoch,train_loss,val_loss,val_accuracy,lr,temperature,phase\n")
+
     print("[training loop]: starting")
     for epoch in tqdm(range(args.epochs), desc="Epochs"):
         if args.distributed and train_sampler is not None:
@@ -129,6 +134,8 @@ def train(args):
             for g in optimizer.param_groups:
                 g['lr'] = new_lr
 
+        train_loss_sum = 0.0
+        train_loss_count = 0
         for x, y in train_loader:
             x, y = x.to(device), y.to(device)
             y = y.repeat(num_estimators) if packed else y
@@ -174,6 +181,13 @@ def train(args):
                 optimizer.step()
                 optimizer.zero_grad()
 
+            # Accumulate train loss for convergence log.
+            bs = x.size(0)
+            if isinstance(loss, torch.Tensor):
+                scalar = loss.mean().item() if loss.dim() > 0 else loss.item()
+                train_loss_sum += scalar * bs
+                train_loss_count += bs
+
         # Collect SGLD posterior sample
         if (in_sampling_phase
                 and (epoch - burn_in) % args.sgld_sample_interval == 0
@@ -205,6 +219,25 @@ def train(args):
             if using_sgld:
                 with open(sgld_val_loss_file, "w") as f:
                     f.write(f"{float(best_val_loss):.6f}\n{best_epoch}\n")
+
+        # Convergence log row.
+        avg_train_loss = (train_loss_sum / train_loss_count) if train_loss_count else float("nan")
+        current_lr = optimizer.param_groups[0]['lr']
+        current_temp = optimizer.param_groups[0].get('temperature', 0.0) if using_sgld else 0.0
+        if using_sgld:
+            if epoch < args.warmup_epochs:
+                phase = "warmup"
+            elif epoch < burn_in:
+                phase = "burn_in"
+            elif epoch < burn_in + cooldown_epochs:
+                phase = "cooldown"
+            else:
+                phase = "sampling"
+        else:
+            phase = "warmup" if epoch < args.warmup_epochs else "train"
+        with open(convergence_file, "a") as f:
+            f.write(f"{epoch},{avg_train_loss:.6f},{float(val_loss):.6f},"
+                    f"{float(val_accuracy):.6f},{current_lr:.6g},{current_temp:.6g},{phase}\n")
 
         if not in_sampling_phase:
             scheduler.step()

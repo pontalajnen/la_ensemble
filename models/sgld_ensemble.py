@@ -16,10 +16,15 @@ class SGLDEnsemble(nn.Module):
         self.models = nn.ModuleList(models)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Return log of the averaged posterior-predictive probabilities.
+        # Downstream eval code applies torch.softmax(output, dim=-1); feeding
+        # it log-probs recovers probs exactly (softmax is invariant to an
+        # additive shift and the probs already sum to 1 per row).
         preds = torch.stack(
             [torch.softmax(m(x), dim=-1) for m in self.models], dim=0
         )
-        return preds.mean(dim=0)
+        mean_probs = preds.mean(dim=0).clamp(min=1e-12)
+        return mean_probs.log()
 
     @property
     def num_samples(self) -> int:
