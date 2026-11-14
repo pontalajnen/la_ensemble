@@ -1,2 +1,7 @@
 ./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_000_epoch100_seed807.pth
 ./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_001_epoch104_seed807.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_002_epoch108_seed807.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_003_epoch112_seed807.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_004_epoch116_seed807.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_005_epoch120_seed807.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_006_epoch124_seed807.pth
