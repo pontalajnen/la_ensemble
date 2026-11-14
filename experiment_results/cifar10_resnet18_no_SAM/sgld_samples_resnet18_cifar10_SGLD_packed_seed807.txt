@@ -21,3 +21,5 @@
 ./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_020_epoch180_seed807.pth
 ./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_021_epoch184_seed807.pth
 ./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_022_epoch188_seed807.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_023_epoch192_seed807.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_024_epoch196_seed807.pth
