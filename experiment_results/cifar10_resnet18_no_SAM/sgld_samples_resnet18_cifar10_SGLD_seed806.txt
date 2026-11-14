@@ -1,0 +1,3 @@
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_000_epoch100_seed806.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_001_epoch104_seed806.pth
+./experiment_results/cifar10_resnet18_no_SAM/sgld_sample_002_epoch108_seed806.pth
