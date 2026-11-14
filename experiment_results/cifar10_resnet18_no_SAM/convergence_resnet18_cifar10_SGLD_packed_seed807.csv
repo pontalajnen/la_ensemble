@@ -1,0 +1,4 @@
+epoch,train_loss,val_loss,val_accuracy,lr,temperature,phase
+0,2.375524,2.300806,0.115400,0.0001,0,warmup
+1,1.822210,1.678321,0.399000,0.02008,0,warmup
+2,1.489770,1.403247,0.500000,0.04006,0,warmup
