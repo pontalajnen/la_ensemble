@@ -7,3 +7,7 @@ self_notes/
 data/*
 logs/
 load_env.sh
+auto_commit.log
+auto_commit.pid
+round*.log
+round*.pid
